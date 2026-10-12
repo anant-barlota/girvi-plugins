@@ -1,0 +1,12 @@
+# Binaries and build artifacts
+bin/
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+/sample-notifier
+
+# OS files
+.DS_Store
+Thumbs.db

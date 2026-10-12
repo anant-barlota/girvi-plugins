@@ -1,0 +1,61 @@
+syntax = "proto3";
+
+package girvi.plugin.v1;
+
+option go_package = "github.com/anant-barlota/girvi-plugins/sdk/gen/girvi/plugin/v1;pluginv1";
+
+// NotificationPlugin defines the gRPC service for communication extensions (WhatsApp, SMS, Telegram, Webhook).
+service NotificationPlugin {
+  // GetMetadata returns plugin identification and required configuration fields.
+  rpc GetMetadata (GetMetadataRequest) returns (PluginMetadata);
+
+  // SendMessage dispatches a single notification to a recipient phone.
+  rpc SendMessage (SendMessageRequest) returns (SendMessageResponse);
+
+  // HealthCheck verifies provider credentials and connectivity.
+  rpc HealthCheck (HealthCheckRequest) returns (HealthCheckResponse);
+}
+
+message GetMetadataRequest {}
+
+message ConfigField {
+  string key = 1;              // Unique config identifier (e.g. "api_key", "sender_id")
+  string title = 2;            // Human-readable title displayed in the UI
+  string description = 3;      // Explanatory guidance for the pawnbroker
+  string type = 4;             // "string", "number", "boolean", "select"
+  bool is_secret = 5;          // true if password/token to mask with dots in UI
+  string default_value = 6;    // Default value if none set
+  repeated string options = 7; // Dropdown options if type == "select"
+}
+
+message PluginMetadata {
+  string id = 1;                          // Unique plugin identifier (e.g. "girvi-whatsapp", "girvi-plugin-sms")
+  string name = 2;                        // Human-readable display name (e.g. "WhatsApp Cloud Gateway")
+  string version = 3;                     // SemVer version string (e.g. "1.0.0")
+  string author = 4;                      // Author or company name
+  string channel = 5;                     // Channel type: "whatsapp", "sms", "telegram", "webhook"
+  repeated string required_config = 6;    // Config keys that must be set before sending messages
+  repeated ConfigField config_fields = 7; // Dynamic schema used by Girvi Desktop to render settings modal
+}
+
+message SendMessageRequest {
+  string tenant_id = 1;                   // Tenant database ID (e.g. "default")
+  string recipient_phone = 2;             // E.164 phone number (e.g. "9876543210")
+  string template_key = 3;                // Event key: "pledge_disbursed", "payment_received", "loan_closed", "due_reminder"
+  string raw_text = 4;                    // Rendered plain-text notification
+  map<string, string> template_vars = 5;  // Structured event variables (customer_name, loan_number, amount, weight_grams, etc.)
+  map<string, string> config = 6;         // Tenant's decrypted configuration values for this plugin
+}
+
+message SendMessageResponse {
+  bool success = 1;                       // true if successfully delivered or queued
+  string message_id = 2;                  // Upstream provider message ID for tracking
+  string error_message = 3;               // Error description or "ignored" if event type is unhandled
+}
+
+message HealthCheckRequest {}
+
+message HealthCheckResponse {
+  bool is_healthy = 1;                    // true if credentials valid and gateway reachable
+  string status_message = 2;              // Status description displayed in Extensions dashboard
+}

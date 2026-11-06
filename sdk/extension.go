@@ -13,6 +13,9 @@ import (
 // with the signed manifest the user approved and refuses anything more.
 type Info struct {
 	ID           string
+	Name         string
+	Author       string
+	Description  string
 	Version      string
 	Capabilities []*corev1.Capability
 	Requires     []string

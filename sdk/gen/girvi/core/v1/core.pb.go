@@ -304,6 +304,9 @@ type InitializeResponse struct {
 	Capabilities     []*Capability          `protobuf:"bytes,3,rep,name=capabilities,proto3" json:"capabilities,omitempty"`
 	Requires         []string               `protobuf:"bytes,4,rep,name=requires,proto3" json:"requires,omitempty"` // "network", "storage.private"
 	Settings         []*SettingField        `protobuf:"bytes,5,rep,name=settings,proto3" json:"settings,omitempty"`
+	Name             string                 `protobuf:"bytes,6,opt,name=name,proto3" json:"name,omitempty"` // shown in the extensions screen
+	Author           string                 `protobuf:"bytes,7,opt,name=author,proto3" json:"author,omitempty"`
+	Description      string                 `protobuf:"bytes,8,opt,name=description,proto3" json:"description,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -371,6 +374,27 @@ func (x *InitializeResponse) GetSettings() []*SettingField {
 		return x.Settings
 	}
 	return nil
+}
+
+func (x *InitializeResponse) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *InitializeResponse) GetAuthor() string {
+	if x != nil {
+		return x.Author
+	}
+	return ""
+}
+
+func (x *InitializeResponse) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
 }
 
 type SettingField struct {
@@ -884,13 +908,16 @@ const file_girvi_core_v1_core_proto_rawDesc = "" +
 	"\x11InitializeRequest\x12!\n" +
 	"\fhost_version\x18\x01 \x01(\tR\vhostVersion\x12F\n" +
 	"\rhost_supports\x18\x02 \x03(\v2!.girvi.core.v1.CapabilityVersionsR\fhostSupports\x12\x19\n" +
-	"\bdata_dir\x18\x03 \x01(\tR\adataDir\"\xf8\x01\n" +
+	"\bdata_dir\x18\x03 \x01(\tR\adataDir\"\xc6\x02\n" +
 	"\x12InitializeResponse\x12!\n" +
 	"\fextension_id\x18\x01 \x01(\tR\vextensionId\x12+\n" +
 	"\x11extension_version\x18\x02 \x01(\tR\x10extensionVersion\x12=\n" +
 	"\fcapabilities\x18\x03 \x03(\v2\x19.girvi.core.v1.CapabilityR\fcapabilities\x12\x1a\n" +
 	"\brequires\x18\x04 \x03(\tR\brequires\x127\n" +
-	"\bsettings\x18\x05 \x03(\v2\x1b.girvi.core.v1.SettingFieldR\bsettings\"\x92\x02\n" +
+	"\bsettings\x18\x05 \x03(\v2\x1b.girvi.core.v1.SettingFieldR\bsettings\x12\x12\n" +
+	"\x04name\x18\x06 \x01(\tR\x04name\x12\x16\n" +
+	"\x06author\x18\a \x01(\tR\x06author\x12 \n" +
+	"\vdescription\x18\b \x01(\tR\vdescription\"\x92\x02\n" +
 	"\fSettingField\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12 \n" +

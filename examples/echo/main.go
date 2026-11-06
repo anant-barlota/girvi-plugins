@@ -28,8 +28,11 @@ type echo struct {
 
 func (e *echo) Info() sdk.Info {
 	return sdk.Info{
-		ID:      "girvi/echo",
-		Version: "0.1.0",
+		ID:          "girvi/echo",
+		Name:        "Echo",
+		Author:      "Girvi",
+		Description: "Writes every delivery to a log file. Used to test the host.",
+		Version:     "0.1.0",
 		Capabilities: []*corev1.Capability{
 			{Name: "notify", Version: 1},
 			{Name: "events.loan.created", Version: 1},

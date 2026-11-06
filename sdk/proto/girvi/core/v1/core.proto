@@ -46,6 +46,9 @@ message InitializeResponse {
   repeated Capability capabilities = 3;
   repeated string requires = 4; // "network", "storage.private"
   repeated SettingField settings = 5;
+  string name = 6;        // shown in the extensions screen
+  string author = 7;
+  string description = 8;
 }
 
 enum SettingScope {

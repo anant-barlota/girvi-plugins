@@ -355,3 +355,32 @@ func TestConsumeBeforeInitializeFails(t *testing.T) {
 		t.Error("Consume before Initialize should fail")
 	}
 }
+
+func TestABlockedItemWaitsAndIsDeliveredOnceTheFixIsIn(t *testing.T) {
+	fixed := make(chan struct{})
+	ext := &fakeExt{handle: func(_ context.Context, _ *deliveryv1.Item, _ int) (Result, error) {
+		select {
+		case <-fixed:
+			return Result{ProviderRef: "after-fix"}, nil
+		default:
+			return Result{}, Blocked(deliveryv1.ErrorClass_ERROR_CLASS_CONFIG, "access token rejected")
+		}
+	}}
+	h := newHarness(t, ext, t.TempDir(), fastOpts())
+	s := h.open()
+	s.expectHello()
+
+	s.offer("d1", time.Now().Add(time.Hour))
+	got := s.statuses("d1", deliveryv1.DeliveryState_DELIVERY_STATE_BLOCKED)
+	if got[0].GetErrorClass() != deliveryv1.ErrorClass_ERROR_CLASS_CONFIG || got[0].GetMessage() != "access token rejected" {
+		t.Errorf("blocked status wrong: %v", got[0])
+	}
+
+	// It keeps retrying without repeating the report, then finishes.
+	time.Sleep(150 * time.Millisecond)
+	close(fixed)
+	final := s.statuses("d1", deliveryv1.DeliveryState_DELIVERY_STATE_DELIVERED)
+	if final[0].GetProviderRef() != "after-fix" {
+		t.Errorf("provider ref = %q", final[0].GetProviderRef())
+	}
+}

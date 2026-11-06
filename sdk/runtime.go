@@ -316,6 +316,7 @@ func (r *Runtime) process(ctx context.Context, q *queue.Queue, row queue.Row) {
 
 	now = r.now()
 	var perm *PermanentError
+	var blocked *BlockedError
 	switch {
 	case err == nil:
 		_ = q.MarkDelivered(row.DeliveryID, res.ProviderRef, now)
@@ -325,6 +326,15 @@ func (r *Runtime) process(ctx context.Context, q *queue.Queue, row queue.Row) {
 		r.report(q, row.DeliveryID, deliveryv1.DeliveryState_DELIVERY_STATE_FAILED, perm.Class, perm.Message, "")
 	case ctx.Err() != nil:
 		// Shutting down mid-call. Leave the item as it was; it runs again later.
+	case errors.As(err, &blocked):
+		next := now.Add(r.opts.backoff(row.Attempts))
+		if next.After(row.ExpiresAt) {
+			next = row.ExpiresAt
+		}
+		_ = q.MarkRetry(row.DeliveryID, blocked.Message, next, now)
+		if row.LastError != blocked.Message { // say it once, not on every retry
+			r.report(q, row.DeliveryID, deliveryv1.DeliveryState_DELIVERY_STATE_BLOCKED, blocked.Class, blocked.Message, "")
+		}
 	default:
 		next := now.Add(r.opts.backoff(row.Attempts))
 		if next.After(row.ExpiresAt) {

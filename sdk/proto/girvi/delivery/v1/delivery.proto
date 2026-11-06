@@ -2,7 +2,8 @@ syntax = "proto3";
 
 // delivery.v1: how events and notify messages reach an extension.
 //
-// The host opens one long-lived bidirectional stream to each running extension.
+// The host opens one long-lived bidirectional stream to each running extension
+// (as the gRPC client).
 // The extension pulls work with Ready and answers each item with an Ack. The
 // host stops at handoff: after ACCEPTED the extension owns retries, rate limits
 // and staleness, and reports final states with StatusUpdate.
@@ -16,7 +17,11 @@ import "girvi/notify/v1/notify.proto";
 option go_package = "github.com/anant-barlota/girvi-plugins/sdk/gen/girvi/delivery/v1;deliveryv1";
 
 service Consumer {
-  rpc Consume(stream FromExtension) returns (stream FromHost);
+  // The host is the gRPC client and the extension is the server, so the request
+  // stream carries what the host sends (FromHost) and the response stream what
+  // the extension sends (FromExtension). The extension sends first: Subscribe,
+  // then Ready.
+  rpc Consume(stream FromHost) returns (stream FromExtension);
 }
 
 message FromExtension {

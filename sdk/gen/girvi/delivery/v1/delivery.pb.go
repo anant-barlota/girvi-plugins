@@ -6,7 +6,8 @@
 
 // delivery.v1: how events and notify messages reach an extension.
 //
-// The host opens one long-lived bidirectional stream to each running extension.
+// The host opens one long-lived bidirectional stream to each running extension
+// (as the gRPC client).
 // The extension pulls work with Ready and answers each item with an Ack. The
 // host stops at handoff: after ACCEPTED the extension owns retries, rate limits
 // and staleness, and reports final states with StatusUpdate.
@@ -951,7 +952,7 @@ const file_girvi_delivery_v1_delivery_proto_rawDesc = "" +
 	"\x16DELIVERY_STATE_EXPIRED\x10\x06\x12\x1a\n" +
 	"\x16DELIVERY_STATE_BLOCKED\x10\a2X\n" +
 	"\bConsumer\x12L\n" +
-	"\aConsume\x12 .girvi.delivery.v1.FromExtension\x1a\x1b.girvi.delivery.v1.FromHost(\x010\x01BMZKgithub.com/anant-barlota/girvi-plugins/sdk/gen/girvi/delivery/v1;deliveryv1b\x06proto3"
+	"\aConsume\x12\x1b.girvi.delivery.v1.FromHost\x1a .girvi.delivery.v1.FromExtension(\x010\x01BMZKgithub.com/anant-barlota/girvi-plugins/sdk/gen/girvi/delivery/v1;deliveryv1b\x06proto3"
 
 var (
 	file_girvi_delivery_v1_delivery_proto_rawDescOnce sync.Once
@@ -1005,8 +1006,8 @@ var file_girvi_delivery_v1_delivery_proto_depIdxs = []int32{
 	14, // 15: girvi.delivery.v1.Item.payment_received:type_name -> girvi.events.v1.PaymentReceived
 	15, // 16: girvi.delivery.v1.Item.loan_redeemed:type_name -> girvi.events.v1.LoanRedeemed
 	16, // 17: girvi.delivery.v1.Item.notify:type_name -> girvi.notify.v1.Message
-	3,  // 18: girvi.delivery.v1.Consumer.Consume:input_type -> girvi.delivery.v1.FromExtension
-	8,  // 19: girvi.delivery.v1.Consumer.Consume:output_type -> girvi.delivery.v1.FromHost
+	8,  // 18: girvi.delivery.v1.Consumer.Consume:input_type -> girvi.delivery.v1.FromHost
+	3,  // 19: girvi.delivery.v1.Consumer.Consume:output_type -> girvi.delivery.v1.FromExtension
 	19, // [19:20] is the sub-list for method output_type
 	18, // [18:19] is the sub-list for method input_type
 	18, // [18:18] is the sub-list for extension type_name

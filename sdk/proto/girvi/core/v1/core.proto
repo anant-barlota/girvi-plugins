@@ -1,0 +1,107 @@
+syntax = "proto3";
+
+// core.v1: the service every extension implements, whatever else it does.
+// It carries no events and no documents.
+package girvi.core.v1;
+
+option go_package = "github.com/anant-barlota/girvi-plugins/sdk/gen/girvi/core/v1;corev1";
+
+service Extension {
+  // Negotiate versions and declare capabilities. The host checks the reply
+  // against the signed manifest the user approved and refuses a binary that
+  // announces anything more.
+  rpc Initialize(InitializeRequest) returns (InitializeResponse);
+
+  // Push settings and the firms the extension is enabled for. Called after
+  // Initialize and again on every change. Secrets arrive here; the extension
+  // holds them in memory because it retries later without the host.
+  rpc Configure(ConfigureRequest) returns (ConfigureResponse);
+
+  rpc Health(HealthRequest) returns (HealthResponse);
+
+  // Drain and exit. The host waits a grace period, then kills the process.
+  rpc Shutdown(ShutdownRequest) returns (ShutdownResponse);
+}
+
+message CapabilityVersions {
+  string name = 1;
+  repeated uint32 versions = 2;
+}
+
+message Capability {
+  string name = 1; // e.g. "notify", "events.loan.created"
+  uint32 version = 2;
+  map<string, string> options = 3; // e.g. {"contact": "true"}
+}
+
+message InitializeRequest {
+  string host_version = 1;
+  repeated CapabilityVersions host_supports = 2;
+  string data_dir = 3; // the extension's private directory
+}
+
+message InitializeResponse {
+  string extension_id = 1; // must equal the id in the signed manifest
+  string extension_version = 2;
+  repeated Capability capabilities = 3;
+  repeated string requires = 4; // "network", "storage.private"
+  repeated SettingField settings = 5;
+}
+
+enum SettingScope {
+  SETTING_SCOPE_UNSPECIFIED = 0;
+  SETTING_SCOPE_INSTANCE = 1;
+  SETTING_SCOPE_FIRM = 2;
+}
+
+message SettingField {
+  string key = 1;
+  string title = 2;
+  string description = 3;
+  string type = 4; // "string", "number", "boolean", "select"
+  bool secret = 5;
+  string default_value = 6;
+  repeated string options = 7;
+  SettingScope scope = 8;
+  bool required = 9;
+}
+
+message FirmSettings {
+  string name = 1;
+  bool enabled = 2;
+  map<string, string> values = 3;
+}
+
+message ConfigureRequest {
+  map<string, string> instance = 1;
+  map<string, FirmSettings> firms = 2; // keyed by firm id
+}
+
+message ConfigureResponse {}
+
+enum HealthStatus {
+  HEALTH_STATUS_UNSPECIFIED = 0;
+  HEALTH_STATUS_OK = 1;
+  HEALTH_STATUS_DEGRADED = 2;
+  HEALTH_STATUS_UNHEALTHY = 3; // e.g. credentials rejected
+}
+
+message FirmHealth {
+  string firm_id = 1;
+  HealthStatus status = 2;
+  string message = 3; // shown in the extensions screen; no customer data
+}
+
+message HealthRequest {}
+
+message HealthResponse {
+  HealthStatus status = 1;
+  string message = 2;
+  repeated FirmHealth firms = 3;
+}
+
+message ShutdownRequest {
+  uint32 grace_seconds = 1;
+}
+
+message ShutdownResponse {}

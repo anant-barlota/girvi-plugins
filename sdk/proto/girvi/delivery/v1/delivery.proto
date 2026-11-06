@@ -1,0 +1,115 @@
+syntax = "proto3";
+
+// delivery.v1: how events and notify messages reach an extension.
+//
+// The host opens one long-lived bidirectional stream to each running extension.
+// The extension pulls work with Ready and answers each item with an Ack. The
+// host stops at handoff: after ACCEPTED the extension owns retries, rate limits
+// and staleness, and reports final states with StatusUpdate.
+package girvi.delivery.v1;
+
+import "google/protobuf/timestamp.proto";
+import "girvi/core/v1/core.proto";
+import "girvi/events/v1/events.proto";
+import "girvi/notify/v1/notify.proto";
+
+option go_package = "github.com/anant-barlota/girvi-plugins/sdk/gen/girvi/delivery/v1;deliveryv1";
+
+service Consumer {
+  rpc Consume(stream FromExtension) returns (stream FromHost);
+}
+
+message FromExtension {
+  oneof msg {
+    Subscribe subscribe = 1; // must be the first message
+    Ready ready = 2;
+    Ack ack = 3;
+    StatusUpdate status = 4;
+  }
+}
+
+// The capabilities to receive. The host validates them against the approved
+// manifest and the firms the extension is enabled for.
+message Subscribe {
+  repeated girvi.core.v1.Capability capabilities = 1;
+}
+
+// "I can take n more items."
+message Ready {
+  uint32 n = 1;
+}
+
+enum AckResult {
+  ACK_RESULT_UNSPECIFIED = 0;
+  ACK_RESULT_ACCEPTED = 1;  // persisted; the extension now owns it
+  ACK_RESULT_DELIVERED = 2; // finished synchronously
+  ACK_RESULT_REJECTED = 3;  // permanent failure
+}
+
+enum ErrorClass {
+  ERROR_CLASS_UNSPECIFIED = 0;
+  ERROR_CLASS_INVALID_INPUT = 1; // bad recipient, template mismatch
+  ERROR_CLASS_UNSUPPORTED = 2;
+  ERROR_CLASS_CONFIG = 3; // credentials or settings need fixing
+  ERROR_CLASS_PROVIDER = 4;
+  ERROR_CLASS_INTERNAL = 5;
+}
+
+message Ack {
+  string delivery_id = 1;
+  AckResult result = 2;
+  ErrorClass error_class = 3;
+  string message = 4;      // metadata only: never customer data
+  string provider_ref = 5; // the provider's message id
+}
+
+enum DeliveryState {
+  DELIVERY_STATE_UNSPECIFIED = 0;
+  DELIVERY_STATE_QUEUED = 1;
+  DELIVERY_STATE_SENDING = 2;
+  DELIVERY_STATE_RETRYING = 3;
+  DELIVERY_STATE_DELIVERED = 4; // for WhatsApp Cloud API: accepted by the provider
+  DELIVERY_STATE_FAILED = 5;
+  DELIVERY_STATE_EXPIRED = 6;
+  DELIVERY_STATE_BLOCKED = 7; // e.g. credentials invalid
+}
+
+// Sent after ACCEPTED, when the item reaches a state worth recording. The SDK
+// holds updates until the stream is open again.
+message StatusUpdate {
+  string delivery_id = 1;
+  DeliveryState state = 2;
+  ErrorClass error_class = 3;
+  string message = 4; // metadata only
+  string provider_ref = 5;
+  google.protobuf.Timestamp at = 6;
+}
+
+message FromHost {
+  oneof msg {
+    Item item = 1;
+    Revoke revoke = 2;
+  }
+}
+
+message Item {
+  string delivery_id = 1; // idempotency key
+  string capability = 2;  // "notify", "events.loan.created", ...
+  uint32 capability_version = 3;
+  string firm_id = 4;
+  google.protobuf.Timestamp occurred_at = 5;
+  google.protobuf.Timestamp expires_at = 6; // after this the extension drops it
+  uint32 attempt = 7;                       // offers so far, starting at 1
+
+  oneof payload {
+    girvi.events.v1.LoanCreated loan_created = 10;
+    girvi.events.v1.PaymentReceived payment_received = 11;
+    girvi.events.v1.LoanRedeemed loan_redeemed = 12;
+    girvi.notify.v1.Message notify = 20;
+  }
+}
+
+// The handoff window ended while the item was leased.
+message Revoke {
+  string delivery_id = 1;
+}

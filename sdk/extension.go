@@ -65,6 +65,22 @@ func Permanent(class deliveryv1.ErrorClass, format string, args ...any) error {
 	return &PermanentError{Class: class, Message: fmt.Sprintf(format, args...)}
 }
 
+// BlockedError tells the SDK the item cannot succeed until someone fixes
+// something, for example credentials that were rejected or a template that does
+// not exist yet. The item is kept and retried with the usual backoff, and the
+// host is told it is blocked instead of an ordinary retry.
+type BlockedError struct {
+	Class   deliveryv1.ErrorClass
+	Message string
+}
+
+func (e *BlockedError) Error() string { return fmt.Sprintf("blocked: %s", e.Message) }
+
+// Blocked builds a BlockedError.
+func Blocked(class deliveryv1.ErrorClass, format string, args ...any) error {
+	return &BlockedError{Class: class, Message: fmt.Sprintf(format, args...)}
+}
+
 // Extension is what an author implements. The SDK owns everything else: the
 // stream to the host, the durable queue, retries with backoff, expiry and
 // status updates.
@@ -74,8 +90,9 @@ type Extension interface {
 	Health(ctx context.Context) Health
 
 	// Handle does the work for one item, for example sends the message. Return
-	// nil on success. Return a *PermanentError when retrying cannot help. Any
-	// other error is retried with backoff until the item expires. Handle may be
+	// nil on success. Return a *PermanentError when retrying cannot help and a
+	// *BlockedError when it waits on a fix. Any other error is retried with
+	// backoff until the item expires. Handle may be
 	// called again for the same delivery id after a crash, so it should be safe to
 	// repeat or use the provider's own idempotency key.
 	Handle(ctx context.Context, item *deliveryv1.Item) (Result, error)

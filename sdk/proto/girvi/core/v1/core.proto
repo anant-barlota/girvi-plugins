@@ -67,6 +67,7 @@ message SettingField {
   repeated string options = 7;
   SettingScope scope = 8;
   bool required = 9;
+  bool advanced = 10; // the screen keeps it out of the way; the default is usually right
 }
 
 message FirmSettings {

@@ -408,6 +408,7 @@ type SettingField struct {
 	Options       []string               `protobuf:"bytes,7,rep,name=options,proto3" json:"options,omitempty"`
 	Scope         SettingScope           `protobuf:"varint,8,opt,name=scope,proto3,enum=girvi.core.v1.SettingScope" json:"scope,omitempty"`
 	Required      bool                   `protobuf:"varint,9,opt,name=required,proto3" json:"required,omitempty"`
+	Advanced      bool                   `protobuf:"varint,10,opt,name=advanced,proto3" json:"advanced,omitempty"` // the screen keeps it out of the way; the default is usually right
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -501,6 +502,13 @@ func (x *SettingField) GetScope() SettingScope {
 func (x *SettingField) GetRequired() bool {
 	if x != nil {
 		return x.Required
+	}
+	return false
+}
+
+func (x *SettingField) GetAdvanced() bool {
+	if x != nil {
+		return x.Advanced
 	}
 	return false
 }
@@ -917,7 +925,7 @@ const file_girvi_core_v1_core_proto_rawDesc = "" +
 	"\bsettings\x18\x05 \x03(\v2\x1b.girvi.core.v1.SettingFieldR\bsettings\x12\x12\n" +
 	"\x04name\x18\x06 \x01(\tR\x04name\x12\x16\n" +
 	"\x06author\x18\a \x01(\tR\x06author\x12 \n" +
-	"\vdescription\x18\b \x01(\tR\vdescription\"\x92\x02\n" +
+	"\vdescription\x18\b \x01(\tR\vdescription\"\xae\x02\n" +
 	"\fSettingField\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12 \n" +
@@ -927,7 +935,9 @@ const file_girvi_core_v1_core_proto_rawDesc = "" +
 	"\rdefault_value\x18\x06 \x01(\tR\fdefaultValue\x12\x18\n" +
 	"\aoptions\x18\a \x03(\tR\aoptions\x121\n" +
 	"\x05scope\x18\b \x01(\x0e2\x1b.girvi.core.v1.SettingScopeR\x05scope\x12\x1a\n" +
-	"\brequired\x18\t \x01(\bR\brequired\"\xb8\x01\n" +
+	"\brequired\x18\t \x01(\bR\brequired\x12\x1a\n" +
+	"\badvanced\x18\n" +
+	" \x01(\bR\badvanced\"\xb8\x01\n" +
 	"\fFirmSettings\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
 	"\aenabled\x18\x02 \x01(\bR\aenabled\x12?\n" +

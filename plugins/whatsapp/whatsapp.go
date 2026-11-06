@@ -19,23 +19,9 @@ import (
 
 const (
 	defaultBaseURL      = "https://graph.facebook.com"
-	defaultGraphVersion = "v21.0"
+	defaultGraphVersion = "v23.0"
 	healthTTL           = 5 * time.Minute
 )
-
-// templateKeys are the keys the host composes, with the variables each carries
-// in the order a template most naturally uses them. Both the template name and
-// the variable order are per-firm settings, because the shop writes and gets its
-// templates approved in Meta Business Manager.
-var templateKeys = []struct {
-	key           string
-	title         string
-	defaultParams string
-}{
-	{"pledge_disbursed", "Loan created", "customer_name,loan_number,amount,weight,interest_rate,pledged_on"},
-	{"payment_received", "Payment received", "customer_name,loan_number,amount_paid,balance_due"},
-	{"loan_closed", "Loan closed", "customer_name,loan_number,weight"},
-}
 
 type whatsApp struct {
 	client *http.Client
@@ -43,6 +29,7 @@ type whatsApp struct {
 	mu     sync.RWMutex
 	cfg    sdk.Config
 	health map[string]cachedHealth
+	setup  map[string]*templateSetup // per firm: what Meta says about our templates
 }
 
 type cachedHealth struct {
@@ -52,26 +39,29 @@ type cachedHealth struct {
 }
 
 func newWhatsApp() *whatsApp {
-	return &whatsApp{client: &http.Client{Timeout: 20 * time.Second}, health: map[string]cachedHealth{}}
+	return &whatsApp{client: &http.Client{Timeout: 20 * time.Second}, health: map[string]cachedHealth{}, setup: map[string]*templateSetup{}}
 }
 
 func (w *whatsApp) Info() sdk.Info {
+	firm, instance := corev1.SettingScope_SETTING_SCOPE_FIRM, corev1.SettingScope_SETTING_SCOPE_INSTANCE
 	settings := []*corev1.SettingField{
-		{Key: "api_base_url", Title: "API address", Description: "Leave as it is unless you go through a proxy.", Type: "string", DefaultValue: defaultBaseURL, Scope: corev1.SettingScope_SETTING_SCOPE_INSTANCE},
-		{Key: "graph_version", Title: "Graph API version", Description: "The WhatsApp Cloud API version to call.", Type: "string", DefaultValue: defaultGraphVersion, Scope: corev1.SettingScope_SETTING_SCOPE_INSTANCE},
-		{Key: "phone_number_id", Title: "Phone number ID", Description: "From WhatsApp Manager in Meta Business Suite. This is the ID of the number, not the number itself.", Type: "string", Required: true, Scope: corev1.SettingScope_SETTING_SCOPE_FIRM},
-		{Key: "access_token", Title: "Access token", Description: "A permanent token for a system user with permission to send WhatsApp messages.", Type: "string", Secret: true, Required: true, Scope: corev1.SettingScope_SETTING_SCOPE_FIRM},
+		{Key: "phone_number_id", Title: "Phone number ID", Description: "In your Meta app: WhatsApp, API Setup, under \"From\". It is an ID, not the phone number itself.", Type: "string", Required: true, Scope: firm},
+		{Key: "waba_id", Title: "Messaging account ID", Description: "In the same place, under \"WhatsApp Business Account ID\". Needed to set up your message templates.", Type: "string", Scope: firm},
+		{Key: "access_token", Title: "Access token", Description: "A permanent token from a system user in Meta Business Settings. The temporary token on the API Setup page stops working after a day.", Type: "string", Secret: true, Required: true, Scope: firm},
+		{Key: "create_templates", Title: "Set up message templates for me", Description: "Girvi creates its three message templates in your account and sends them to Meta for approval. Turn it off if you manage templates yourself.", Type: "boolean", DefaultValue: "true", Scope: firm},
+		{Key: "api_base_url", Title: "API address", Description: "Leave as it is unless you go through a proxy.", Type: "string", DefaultValue: defaultBaseURL, Scope: instance, Advanced: true},
+		{Key: "graph_version", Title: "Graph API version", Description: "The WhatsApp Cloud API version to call.", Type: "string", DefaultValue: defaultGraphVersion, Scope: instance, Advanced: true},
 	}
-	for _, t := range templateKeys {
+	for _, t := range managedTemplates {
 		settings = append(settings,
-			&corev1.SettingField{Key: t.key + "_template", Title: t.title + ": template name", Description: "The name of your approved utility template for this message. Leave empty to not send it.", Type: "string", Scope: corev1.SettingScope_SETTING_SCOPE_FIRM},
-			&corev1.SettingField{Key: t.key + "_language", Title: t.title + ": template language", Description: "The language code the template was approved in, for example en or en_US.", Type: "string", DefaultValue: "en", Scope: corev1.SettingScope_SETTING_SCOPE_FIRM},
-			&corev1.SettingField{Key: t.key + "_params", Title: t.title + ": template variables", Description: "The variables to fill {{1}}, {{2}} and so on, in order, separated by commas.", Type: "string", DefaultValue: t.defaultParams, Scope: corev1.SettingScope_SETTING_SCOPE_FIRM},
+			&corev1.SettingField{Key: t.key + "_template", Title: t.title + ": template name", Description: "Leave empty to use " + t.defaultName + ", which Girvi creates for you. Enter your own approved template to use it instead.", Type: "string", DefaultValue: "", Scope: firm, Advanced: true},
+			&corev1.SettingField{Key: t.key + "_language", Title: t.title + ": template language", Description: "The language code the template was approved in, for example en or en_US.", Type: "string", DefaultValue: "en", Scope: firm, Advanced: true},
+			&corev1.SettingField{Key: t.key + "_params", Title: t.title + ": template variables", Description: "The Girvi values that fill {{1}}, {{2}} and so on, in order, separated by commas.", Type: "string", DefaultValue: t.defaultParams, Scope: firm, Advanced: true},
 		)
 	}
 	settings = append(settings,
-		&corev1.SettingField{Key: "test_template", Title: "Test message: template name", Description: "Used by the Send test button. Meta gives every new number a template called hello_world.", Type: "string", DefaultValue: "hello_world", Scope: corev1.SettingScope_SETTING_SCOPE_FIRM},
-		&corev1.SettingField{Key: "test_language", Title: "Test message: template language", Type: "string", DefaultValue: "en_US", Scope: corev1.SettingScope_SETTING_SCOPE_FIRM},
+		&corev1.SettingField{Key: "test_template", Title: "Test message: template name", Description: "Used by Send test. Meta gives every new number a template called hello_world.", Type: "string", DefaultValue: "hello_world", Scope: firm, Advanced: true},
+		&corev1.SettingField{Key: "test_language", Title: "Test message: template language", Type: "string", DefaultValue: "en_US", Scope: firm, Advanced: true},
 	)
 
 	return sdk.Info{
@@ -79,7 +69,7 @@ func (w *whatsApp) Info() sdk.Info {
 		Name:        "WhatsApp Cloud API",
 		Author:      "Girvi",
 		Description: "Sends loan and payment messages to customers from your own WhatsApp Business number.",
-		Version:     "0.1.0",
+		Version:     "0.2.0",
 		Capabilities: []*corev1.Capability{
 			{Name: "notify", Version: 1},
 		},
@@ -90,9 +80,21 @@ func (w *whatsApp) Info() sdk.Info {
 
 func (w *whatsApp) Configure(_ context.Context, cfg sdk.Config) error {
 	w.mu.Lock()
-	defer w.mu.Unlock()
 	w.cfg = cfg
 	w.health = map[string]cachedHealth{} // credentials may have changed
+	w.setup = map[string]*templateSetup{}
+	var enabled []string
+	for id, f := range cfg.Firms {
+		if f.Enabled {
+			enabled = append(enabled, id)
+		}
+	}
+	w.mu.Unlock()
+
+	// Setting up templates talks to Meta, so it happens in the background.
+	for _, id := range enabled {
+		w.refreshTemplatesAsync(id)
+	}
 	return nil
 }
 
@@ -187,14 +189,11 @@ func (w *whatsApp) template(values map[string]string, key string) (template, err
 			language: valueOr(values["test_language"], "en_US"),
 		}, nil
 	}
-	for _, t := range templateKeys {
+	for _, t := range managedTemplates {
 		if t.key != key {
 			continue
 		}
-		name := strings.TrimSpace(values[t.key+"_template"])
-		if name == "" {
-			return template{}, sdk.Blocked(deliveryv1.ErrorClass_ERROR_CLASS_CONFIG, "set the template name for %q in the WhatsApp settings", t.title)
-		}
+		name := valueOr(values[t.key+"_template"], t.defaultName)
 		var params []string
 		for _, p := range strings.Split(valueOr(values[t.key+"_params"], t.defaultParams), ",") {
 			if p = strings.TrimSpace(p); p != "" {
@@ -367,6 +366,14 @@ func (w *whatsApp) firmHealth(ctx context.Context, firmID string) cachedHealth {
 		h.status, h.message = corev1.HealthStatus_HEALTH_STATUS_DEGRADED, "Settings are incomplete: enter the phone number ID and access token."
 	default:
 		h.status, h.message = w.checkCredentials(ctx, values, phoneNumberID, token)
+		if h.status == corev1.HealthStatus_HEALTH_STATUS_OK {
+			if extra, bad := w.templateSummary(firmID); extra != "" {
+				h.message += ". " + extra
+				if bad {
+					h.status = corev1.HealthStatus_HEALTH_STATUS_DEGRADED
+				}
+			}
+		}
 	}
 
 	w.mu.Lock()

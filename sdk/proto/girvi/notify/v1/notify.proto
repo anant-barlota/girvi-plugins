@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+// A message the host has composed for an extension to transport. The extension
+// does not decide the content. It maps template_key and vars onto its provider
+// (for WhatsApp, an approved template name and its ordered parameters).
+package girvi.notify.v1;
+
+option go_package = "github.com/anant-barlota/girvi-plugins/sdk/gen/girvi/notify/v1;notifyv1";
+
+// Capability name: notify
+//
+// Template keys and their variables (all values are host-formatted strings):
+//
+//   pledge_disbursed  customer_name, loan_number, amount, weight, interest_rate, pledged_on
+//   payment_received  customer_name, loan_number, amount_paid, balance_due
+//   loan_closed       customer_name, loan_number, weight
+//
+// Adding a key or a variable is compatible. Removing or renaming one is not.
+message Message {
+  string recipient_e164 = 1; // normalized by the host; never empty
+  string template_key = 2;
+  map<string, string> vars = 3;
+  string language = 4; // "en" at launch
+  string firm_name = 5;
+}

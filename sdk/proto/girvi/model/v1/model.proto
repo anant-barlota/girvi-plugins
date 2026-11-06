@@ -1,0 +1,149 @@
+syntax = "proto3";
+
+// Shared building blocks for every event and document model.
+//
+// Rules (see the design document):
+//   * Money is integer paise, weight is integer milligrams, dates are ISO 8601.
+//     No floats for money or weight.
+//   * Each value carries the canonical number and a host-formatted display string.
+//     Extensions never format or compute money themselves.
+//   * Nothing here carries an ID document number. Those never leave the host.
+//   * Adding a field is compatible. Removing or renaming one needs a new major
+//     version of the package.
+package girvi.model.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/anant-barlota/girvi-plugins/sdk/gen/girvi/model/v1;modelv1";
+
+message Money {
+  int64 paise = 1;
+  string display = 2; // e.g. "₹1,23,456.00", formatted by the host for the firm's locale
+}
+
+message Weight {
+  int64 milligrams = 1;
+  string display = 2; // e.g. "25.000 g"
+}
+
+// A calendar date with no time of day.
+message Date {
+  string iso = 1; // "2026-10-12"
+  string display = 2;
+}
+
+message Moment {
+  google.protobuf.Timestamp at = 1;
+  string display = 2;
+}
+
+enum DurationUnit {
+  DURATION_UNIT_UNSPECIFIED = 0;
+  DURATION_UNIT_MONTH = 1;
+  DURATION_UNIT_YEAR = 2;
+}
+
+message Duration {
+  uint32 count = 1;
+  DurationUnit unit = 2;
+}
+
+// An interest rate. Stored loans are annual (14% p.a. is basis_points 1400 over
+// one year). The monthly equivalent is a display matter only.
+message Rate {
+  uint32 basis_points = 1; // hundredths of a percent
+  Duration per = 2;
+  string display = 3; // e.g. "14% p.a."
+}
+
+message Firm {
+  string id = 1;
+  string name = 2;
+  string address = 3;
+  string license_number = 4;
+  string phone = 5;
+  string mobile = 6;
+  string email = 7;
+  string upi_id = 8;
+  string locale = 9; // "en-IN" at launch
+}
+
+// The customer on an event or document. Contact and photo are separate optional
+// sections that an extension only receives if it declared the matching option.
+message Customer {
+  string id = 1;
+  string display_name = 2;
+  string phone = 3;      // as stored; empty when the customer has none
+  string phone_e164 = 4; // normalized by the host; empty when it cannot be
+}
+
+message CustomerContact {
+  string address_text = 1;
+}
+
+message BlobRef {
+  string id = 1;
+  string mime = 2;
+  uint32 width = 3;
+  uint32 height = 4;
+}
+
+enum LoanStatus {
+  LOAN_STATUS_UNSPECIFIED = 0;
+  LOAN_STATUS_ACTIVE = 1;
+  LOAN_STATUS_PARTIALLY_PAID = 2;
+  LOAN_STATUS_REDEEMED = 3;
+  LOAN_STATUS_CANCELLED = 4;
+  LOAN_STATUS_AUCTIONED = 5;
+}
+
+// There is no due date: the domain has no due-date rule.
+message Loan {
+  string id = 1;
+  string number = 2;
+  Date pledged_on = 3;
+  Money principal = 4;
+  Money value = 5;
+  Rate interest_rate = 6;
+  Weight total_net_weight = 7;
+  Weight total_gross_weight = 8;
+  int64 total_pieces = 9;
+  LoanStatus status = 10;
+}
+
+message LoanRef {
+  string id = 1;
+  string number = 2;
+}
+
+enum Metal {
+  METAL_UNSPECIFIED = 0;
+  METAL_GOLD = 1;
+  METAL_SILVER = 2;
+  METAL_OTHER = 3;
+}
+
+message Article {
+  string description = 1;
+  string article_type = 2;
+  Metal metal = 3;
+  Weight net_weight = 4;
+  Weight gross_weight = 5;
+  int64 pieces = 6;
+  Money value = 7;
+  BlobRef photo = 8;
+}
+
+enum PaymentMode {
+  PAYMENT_MODE_UNSPECIFIED = 0; // consumers treat anything unknown as OTHER
+  PAYMENT_MODE_CASH = 1;
+  PAYMENT_MODE_UPI = 2;
+  PAYMENT_MODE_BANK = 3;
+  PAYMENT_MODE_OTHER = 4;
+}
+
+message PaymentSplit {
+  PaymentMode mode = 1;
+  Money amount = 2;
+  string reference = 3;
+}

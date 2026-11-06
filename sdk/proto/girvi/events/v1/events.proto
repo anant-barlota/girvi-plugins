@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+// Domain events delivered through the Consume stream. The firm and the time of
+// the event travel on the delivery Item; these messages carry only what each
+// event needs. Snapshots are minimal and are cleared by the host at handoff.
+package girvi.events.v1;
+
+import "girvi/model/v1/model.proto";
+
+option go_package = "github.com/anant-barlota/girvi-plugins/sdk/gen/girvi/events/v1;eventsv1";
+
+// Capability name: events.loan.created
+message LoanCreated {
+  girvi.model.v1.Customer customer = 1;
+  girvi.model.v1.Loan loan = 2;
+}
+
+// Capability name: events.payment.received
+message PaymentReceived {
+  girvi.model.v1.Customer customer = 1;
+  girvi.model.v1.LoanRef loan = 2;
+  girvi.model.v1.Money amount = 3;
+  girvi.model.v1.Date date = 4;
+  girvi.model.v1.Money outstanding_principal = 5;
+}
+
+// Capability name: events.loan.redeemed
+message LoanRedeemed {
+  girvi.model.v1.Customer customer = 1;
+  girvi.model.v1.LoanRef loan = 2;
+  girvi.model.v1.Date redeemed_on = 3;
+  girvi.model.v1.Weight returned_weight = 4;
+}

@@ -200,21 +200,26 @@ func TestErrorsAreClassifiedByWhatToDoNext(t *testing.T) {
 	}
 }
 
-func TestMissingSettingsBlockInsteadOfFailing(t *testing.T) {
+func TestMissingCredentialsBlockInsteadOfFailing(t *testing.T) {
 	f := newFakeGraph(t)
-
 	w := configured(t, f, map[string]string{"access_token": ""})
 	if _, err := w.Handle(context.Background(), pledgeItem()); kindOf(err) != "blocked" {
 		t.Errorf("missing token = %v; want blocked", err)
 	}
-
-	w = configured(t, f, map[string]string{"pledge_disbursed_template": ""})
-	_, err := w.Handle(context.Background(), pledgeItem())
-	if kindOf(err) != "blocked" || !strings.Contains(err.Error(), "template name") {
-		t.Errorf("missing template name = %v; want blocked with a pointer to the setting", err)
-	}
 	if f.got.method != "" {
 		t.Error("nothing should be sent while settings are missing")
+	}
+}
+
+func TestWithoutATemplateNameGirviUsesItsOwnDefault(t *testing.T) {
+	f := newFakeGraph(t)
+	w := configured(t, f, map[string]string{"pledge_disbursed_template": ""})
+	if _, err := w.Handle(context.Background(), pledgeItem()); err != nil {
+		t.Fatal(err)
+	}
+	tpl := f.got.body["template"].(map[string]any)
+	if tpl["name"] != "girvi_pledge_disbursed" {
+		t.Errorf("template = %v; want the default name", tpl["name"])
 	}
 }
 

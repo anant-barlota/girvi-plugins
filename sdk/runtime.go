@@ -86,6 +86,9 @@ func (r *Runtime) Initialize(ctx context.Context, req *corev1.InitializeRequest)
 	return &corev1.InitializeResponse{
 		ExtensionId:      info.ID,
 		ExtensionVersion: info.Version,
+		Name:             info.Name,
+		Author:           info.Author,
+		Description:      info.Description,
 		Capabilities:     info.Capabilities,
 		Requires:         info.Requires,
 		Settings:         info.Settings,

@@ -61,7 +61,7 @@ func (w *whatsApp) Info() sdk.Info {
 		)
 	}
 	settings = append(settings,
-		&corev1.SettingField{Key: "test_template", Title: "Test message: template name", Description: "Used by Send test. Meta gives every new number a template called hello_world.", Type: "string", DefaultValue: "hello_world", Scope: firm, Advanced: true},
+		&corev1.SettingField{Key: "test_template", Title: "Test message: template name", Description: "Leave empty or as hello_world to preview your Loan created message once Meta has approved it. Until then Meta's hello_world is sent. Enter another approved template to send that instead.", Type: "string", DefaultValue: "", Scope: firm, Advanced: true},
 		&corev1.SettingField{Key: "test_language", Title: "Test message: template language", Type: "string", DefaultValue: "en_US", Scope: firm, Advanced: true},
 	)
 
@@ -148,13 +148,17 @@ func (w *whatsApp) Handle(ctx context.Context, item *deliveryv1.Item) (sdk.Resul
 		return sdk.Result{}, sdk.Blocked(deliveryv1.ErrorClass_ERROR_CLASS_CONFIG, "enter the phone number ID and access token in the WhatsApp settings")
 	}
 
-	tpl, err := w.template(values, msg.GetTemplateKey())
+	tpl, err := w.template(values, msg.GetTemplateKey(), item.GetFirmId())
 	if err != nil {
 		return sdk.Result{}, err
 	}
+	vars := msg.GetVars()
+	if tpl.preview {
+		vars = sampleVars // a preview fills the real template with made-up values
+	}
 	params := make([]map[string]string, 0, len(tpl.params))
 	for _, name := range tpl.params {
-		v, ok := msg.GetVars()[name]
+		v, ok := vars[name]
 		if !ok {
 			return sdk.Result{}, sdk.Permanent(deliveryv1.ErrorClass_ERROR_CLASS_INVALID_INPUT, "the message has no value for the variable %q", name)
 		}
@@ -180,15 +184,34 @@ type template struct {
 	name     string
 	language string
 	params   []string
+	preview  bool // a test that shows the real wording with sample values
+}
+
+// sampleVars fill a preview, so the shop sees what a customer would get.
+var sampleVars = map[string]string{
+	"customer_name": "Test Customer",
+	"loan_number":   "TEST-001",
+	"amount":        "₹10,000.00",
+	"weight":        "10.000 g",
+	"interest_rate": "12% p.a.",
+	"pledged_on":    "01 Jan 2026",
+	"amount_paid":   "₹2,000.00",
+	"balance_due":   "₹8,000.00",
 }
 
 // template looks up how a host message key maps onto the shop's approved template.
-func (w *whatsApp) template(values map[string]string, key string) (template, error) {
+func (w *whatsApp) template(values map[string]string, key, firmID string) (template, error) {
 	if key == "test_ping" {
-		return template{
-			name:     valueOr(values["test_template"], "hello_world"),
-			language: valueOr(values["test_language"], "en_US"),
-		}, nil
+		chosen := strings.TrimSpace(values["test_template"])
+		if chosen == "" || chosen == "hello_world" {
+			// Preview the Loan created message once it can be sent; until then fall
+			// back to the template every new Meta number has.
+			if t, ok := w.previewTemplate(values, firmID); ok {
+				return t, nil
+			}
+			return template{name: "hello_world", language: valueOr(values["test_language"], "en_US")}, nil
+		}
+		return template{name: chosen, language: valueOr(values["test_language"], "en_US")}, nil
 	}
 	for _, t := range managedTemplates {
 		if t.key != key {
@@ -442,4 +465,25 @@ func (w *whatsApp) checkCredentials(ctx context.Context, values map[string]strin
 	default:
 		return corev1.HealthStatus_HEALTH_STATUS_DEGRADED, fmt.Sprintf("WhatsApp answered with status %d.", resp.StatusCode)
 	}
+}
+
+// previewTemplate returns the Loan created template for a test message, when Meta
+// has approved it (or the shop uses its own).
+func (w *whatsApp) previewTemplate(values map[string]string, firmID string) (template, bool) {
+	w.mu.RLock()
+	st := w.setup[firmID]
+	w.mu.RUnlock()
+	if st == nil {
+		return template{}, false
+	}
+	status := st.statuses["pledge_disbursed"]
+	if status != "APPROVED" && status != "custom" {
+		return template{}, false
+	}
+	t, err := w.template(values, "pledge_disbursed", firmID)
+	if err != nil {
+		return template{}, false
+	}
+	t.preview = true
+	return t, true
 }

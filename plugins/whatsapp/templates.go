@@ -193,9 +193,22 @@ func (w *whatsApp) createTemplate(ctx context.Context, values map[string]string,
 		return err
 	}
 	if code < 200 || code > 299 {
+		if alreadyExists(body) {
+			return fmt.Errorf("a template named %s already exists in your account, but Girvi cannot see its status. "+
+				"Open WhatsApp Manager, then Message templates, and look for it. If Meta turned it down, delete it there or enter a different template name under Advanced", name)
+		}
 		return metaProblem(code, body)
 	}
 	return nil
+}
+
+// alreadyExists recognizes Meta's answer to creating a template whose name and
+// language are taken.
+func alreadyExists(body []byte) bool {
+	var e apiError
+	_ = json.Unmarshal(body, &e)
+	text := strings.ToLower(e.Error.Message + " " + e.Error.UserTitle + " " + e.Error.UserMsg)
+	return strings.Contains(text, "already") && (strings.Contains(text, "content") || strings.Contains(text, "exist"))
 }
 
 // graph makes one call to the Graph API and returns the body and status.
@@ -271,7 +284,23 @@ func (w *whatsApp) templateSummary(firmID string) (summary string, bad bool) {
 		w.refreshTemplatesAsync(firmID)
 	}
 	if st.problem != "" {
-		return "Message templates need attention: " + st.problem, true
+		// Keep the rest of the picture: the shop should still see what is fine.
+		ok, waiting := 0, 0
+		for _, t := range managedTemplates {
+			switch st.statuses[t.key] {
+			case "APPROVED", "custom":
+				ok++
+			case "PENDING", "IN_APPEAL", "":
+			}
+			if s := st.statuses[t.key]; s == "PENDING" || s == "IN_APPEAL" {
+				waiting++
+			}
+		}
+		extra := ""
+		if ok > 0 || waiting > 0 {
+			extra = fmt.Sprintf(" (%d approved, %d waiting for Meta)", ok, waiting)
+		}
+		return "Message templates need attention: " + st.problem + extra, true
 	}
 
 	counts := map[string]int{}

@@ -49,6 +49,12 @@ type Result struct {
 	// ProviderRef is the provider's id for what was sent, for example a
 	// WhatsApp message id.
 	ProviderRef string
+	// Unconfirmed means the provider accepted the item but cannot tell us
+	// whether it arrived. It is reported as SENT, not DELIVERED, so the shop is
+	// never told something arrived when nobody knows.
+	Unconfirmed bool
+	// Note is shown beside the status, for example "Accepted by WhatsApp".
+	Note string
 }
 
 // PermanentError tells the SDK not to retry: the item can never succeed, for

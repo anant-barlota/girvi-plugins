@@ -86,6 +86,9 @@ func TestSendsTheTemplateWithTheVariablesInOrder(t *testing.T) {
 	if res.ProviderRef != "wamid.ABC" {
 		t.Errorf("provider ref = %q", res.ProviderRef)
 	}
+	if !res.Unconfirmed || !strings.Contains(res.Note, "not confirmed") {
+		t.Errorf("an accepted send must not claim it arrived: %+v", res)
+	}
 	if f.got.method != "POST" || f.got.path != "/v21.0/1055/messages" {
 		t.Errorf("request = %s %s", f.got.method, f.got.path)
 	}
@@ -179,6 +182,7 @@ func TestErrorsAreClassifiedByWhatToDoNext(t *testing.T) {
 		{"expired token", 401, `{"error":{"message":"Error validating access token","type":"OAuthException","code":190}}`, "blocked"},
 		{"template does not exist", 404, `{"error":{"message":"Template name does not exist","code":132001}}`, "blocked"},
 		{"wrong variable count", 400, `{"error":{"message":"Number of parameters does not match","code":132000}}`, "blocked"},
+		{"locked account", 400, `{"error":{"message":"Business Account locked","code":131031}}`, "blocked"},
 		{"number not on whatsapp", 400, `{"error":{"message":"Message undeliverable","code":131026}}`, "permanent"},
 		{"not in the test allow list", 400, `{"error":{"message":"Recipient not in allowed list","code":131030}}`, "permanent"},
 		{"rate limit by status", 429, `{}`, "retry"},

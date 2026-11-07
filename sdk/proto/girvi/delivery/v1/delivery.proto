@@ -73,10 +73,14 @@ enum DeliveryState {
   DELIVERY_STATE_QUEUED = 1;
   DELIVERY_STATE_SENDING = 2;
   DELIVERY_STATE_RETRYING = 3;
-  DELIVERY_STATE_DELIVERED = 4; // for WhatsApp Cloud API: accepted by the provider
+  DELIVERY_STATE_DELIVERED = 4; // confirmed delivered
   DELIVERY_STATE_FAILED = 5;
   DELIVERY_STATE_EXPIRED = 6;
   DELIVERY_STATE_BLOCKED = 7; // e.g. credentials invalid
+  // Handed to the provider, which accepted it but does not tell us whether it
+  // arrived (WhatsApp Cloud API reports that by webhook, which a desktop app
+  // cannot receive). Final, but not a confirmation. A failure can still follow.
+  DELIVERY_STATE_SENT = 8;
 }
 
 // Sent after ACCEPTED, when the item reaches a state worth recording. The SDK

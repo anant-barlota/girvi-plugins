@@ -243,7 +243,13 @@ func (w *whatsApp) send(ctx context.Context, endpoint, token string, body map[st
 		if err := json.Unmarshal(payload, &ok); err != nil || len(ok.Messages) == 0 || ok.Messages[0].ID == "" {
 			return sdk.Result{}, fmt.Errorf("WhatsApp accepted the request but returned no message id")
 		}
-		return sdk.Result{ProviderRef: ok.Messages[0].ID}, nil
+		// Meta accepted it. Whether it arrives is reported by webhook, which a
+		// desktop app cannot receive, so this is "sent", not "delivered".
+		return sdk.Result{
+			ProviderRef: ok.Messages[0].ID,
+			Unconfirmed: true,
+			Note:        "Accepted by WhatsApp. Delivery is not confirmed.",
+		}, nil
 	}
 	return sdk.Result{}, classify(resp.StatusCode, payload)
 }
@@ -301,7 +307,9 @@ func classify(status int, body []byte) error {
 
 	case 0, 190, 102, 104: // token invalid, expired or missing
 		return sdk.Blocked(deliveryv1.ErrorClass_ERROR_CLASS_CONFIG, "WhatsApp rejected the access token: %s", msg)
-	case 10, 200, 131031, 131042: // permission, account locked, payment problem
+	case 131031: // the business account is locked
+		return sdk.Blocked(deliveryv1.ErrorClass_ERROR_CLASS_CONFIG, "WhatsApp has locked the business account. Open Business Support Home in Meta Business Suite to see why: %s", msg)
+	case 10, 200, 131042: // permission, payment problem
 		return sdk.Blocked(deliveryv1.ErrorClass_ERROR_CLASS_CONFIG, "the WhatsApp account needs attention: %s", msg)
 	case 132001, 132015, 132016, 133010: // template missing, paused or disabled; number not registered
 		return sdk.Blocked(deliveryv1.ErrorClass_ERROR_CLASS_CONFIG, "check the template and number in the WhatsApp settings: %s", msg)

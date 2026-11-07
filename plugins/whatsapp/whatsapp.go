@@ -272,6 +272,10 @@ type apiError struct {
 		Data      struct {
 			Details string `json:"details"`
 		} `json:"error_data"`
+		// Template calls explain themselves here, for example "too many
+		// variables for the length of the message".
+		UserTitle string `json:"error_user_title"`
+		UserMsg   string `json:"error_user_msg"`
 	} `json:"error"`
 }
 

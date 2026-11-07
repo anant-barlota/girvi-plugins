@@ -100,10 +100,20 @@ func TestEveryDefaultTemplateHasTheRightNumberOfVariables(t *testing.T) {
 		if vars != params || vars != len(tpl.examples) {
 			t.Errorf("%s: %d placeholders, %d variables, %d examples; they must all match or Meta rejects it", tpl.key, vars, params, len(tpl.examples))
 		}
+		last := -1
 		for i := 1; i <= vars; i++ {
-			if !strings.Contains(tpl.body, "{{"+string(rune('0'+i))+"}}") {
+			at := strings.Index(tpl.body, "{{"+string(rune('0'+i))+"}}")
+			if at < 0 {
 				t.Errorf("%s: placeholder {{%d}} is missing", tpl.key, i)
+			} else if at < last {
+				t.Errorf("%s: placeholders must appear in order, but {{%d}} comes too early", tpl.key, i)
 			}
+			last = at
+		}
+		// Meta turns down a template with too many variables for its length. Keep
+		// plenty of ordinary text around each one.
+		if words := len(strings.Fields(tpl.body)); words < vars*4 {
+			t.Errorf("%s: %d words for %d variables is too thin for Meta; want at least four per variable", tpl.key, words, vars)
 		}
 		if strings.HasPrefix(tpl.body, "{{") || strings.HasSuffix(strings.TrimSpace(tpl.body), "}}") {
 			t.Errorf("%s: Meta does not allow a body that starts or ends with a variable", tpl.key)
@@ -193,28 +203,45 @@ func TestNothingIsTouchedWhenSetupIsOffOrIncomplete(t *testing.T) {
 }
 
 func TestAProblemFromMetaIsSaidInWords(t *testing.T) {
-	f := newFakeMeta(t)
-	f.failPost = &struct {
-		status int
-		body   string
-	}{400, `{"error":{"message":"Invalid parameter","code":100}}`}
-	w := metaConfigured(t, f, nil)
-
-	_, problem := w.ensureTemplates(context.Background(), "firm-a")
-	if !strings.Contains(problem, "check the Messaging account ID") {
-		t.Errorf("problem = %q; want a pointer to the Messaging account ID", problem)
+	cases := []struct {
+		name         string
+		status       int
+		body         string
+		want         string
+		mustNotMatch string
+	}{
+		{"Meta's own explanation is shown", 400,
+			`{"error":{"message":"Invalid parameter","code":100,"error_user_title":"Too many variables","error_user_msg":"This template has too many variables for its length."}}`,
+			"Too many variables: This template has too many variables for its length.", "Messaging account ID"},
+		{"an unexplained invalid parameter does not blame the account id", 400,
+			`{"error":{"message":"Invalid parameter","code":100}}`,
+			"Invalid parameter", "Messaging account ID"},
+		{"an account that is not found points at its id", 404,
+			`{"error":{"message":"Unsupported get request. Object with ID does not exist","code":100}}`,
+			"Check its ID", ""},
+		{"a rejected token", 401,
+			`{"error":{"message":"Error validating access token","code":190}}`,
+			"rejected the access token", ""},
 	}
-	if strings.Contains(problem, "TOKEN-123") {
-		t.Error("the token must never appear in a message")
-	}
-
-	f.failPost = &struct {
-		status int
-		body   string
-	}{401, `{"error":{"message":"Error validating access token","code":190}}`}
-	_, problem = w.ensureTemplates(context.Background(), "firm-a")
-	if !strings.Contains(problem, "rejected the access token") {
-		t.Errorf("problem = %q", problem)
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			f := newFakeMeta(t)
+			f.failPost = &struct {
+				status int
+				body   string
+			}{c.status, c.body}
+			w := metaConfigured(t, f, nil)
+			_, problem := w.ensureTemplates(context.Background(), "firm-a")
+			if !strings.Contains(problem, c.want) {
+				t.Errorf("problem = %q; want it to contain %q", problem, c.want)
+			}
+			if c.mustNotMatch != "" && strings.Contains(problem, c.mustNotMatch) {
+				t.Errorf("problem = %q; it must not mention %q", problem, c.mustNotMatch)
+			}
+			if strings.Contains(problem, "TOKEN-123") {
+				t.Error("the token must never appear in a message")
+			}
+		})
 	}
 }
 

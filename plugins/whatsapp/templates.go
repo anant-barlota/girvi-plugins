@@ -31,16 +31,18 @@ var managedTemplates = []managedTemplate{
 		title:         "Loan created",
 		defaultName:   "girvi_pledge_disbursed",
 		defaultParams: "customer_name,loan_number,amount,weight,interest_rate,pledged_on",
-		body:          "Hello {{1}}, your loan {{2}} for {{3}} against {{4}} at {{5}} was recorded on {{6}}.",
-		examples:      []string{"Ravi Kumar", "F-101", "₹15,000.00", "25.000 g", "14% p.a.", "12 Oct 2026"},
+		body: "Hello {{1}}, thank you for choosing us. Your loan {{2}} for {{3}} has been recorded against your pledged articles " +
+			"weighing {{4}}, at an interest rate of {{5}}. The date of the pledge is {{6}}. Please keep your pawn ticket safe.",
+		examples: []string{"Ravi Kumar", "F-101", "₹15,000.00", "25.000 g", "14% p.a.", "12 Oct 2026"},
 	},
 	{
 		key:           "payment_received",
 		title:         "Payment received",
 		defaultName:   "girvi_payment_received",
-		defaultParams: "customer_name,loan_number,amount_paid,balance_due",
-		body:          "Hello {{1}}, we received your payment of {{3}} for loan {{2}}. Balance remaining: {{4}}.",
-		examples:      []string{"Ravi Kumar", "F-101", "₹5,000.00", "₹10,000.00"},
+		defaultParams: "customer_name,amount_paid,loan_number,balance_due",
+		body: "Hello {{1}}, thank you. We have received your payment of {{2}} towards your loan {{3}}. " +
+			"The balance remaining on this loan is now {{4}}. Please keep this message for your records.",
+		examples: []string{"Ravi Kumar", "₹5,000.00", "F-101", "₹10,000.00"},
 	},
 	{
 		key:           "loan_closed",
@@ -223,18 +225,30 @@ func (w *whatsApp) graph(ctx context.Context, method, endpoint, token string, pa
 func metaProblem(status int, body []byte) error {
 	var e apiError
 	_ = json.Unmarshal(body, &e)
-	msg := strings.TrimSpace(e.Error.Message)
-	if d := strings.TrimSpace(e.Error.Data.Details); d != "" && d != msg {
-		msg += " (" + d + ")"
+
+	// Meta's own explanation, when it gives one, says what is actually wrong.
+	msg := strings.TrimSpace(e.Error.UserMsg)
+	if t := strings.TrimSpace(e.Error.UserTitle); t != "" && msg != "" {
+		msg = t + ": " + msg
+	} else if t != "" {
+		msg = t
+	}
+	if msg == "" {
+		msg = strings.TrimSpace(e.Error.Message)
+		if d := strings.TrimSpace(e.Error.Data.Details); d != "" && d != msg {
+			msg += " (" + d + ")"
+		}
 	}
 	if msg == "" {
 		msg = fmt.Sprintf("Meta answered with status %d", status)
 	}
+
 	switch {
 	case status == http.StatusUnauthorized || e.Error.Code == 190:
 		return fmt.Errorf("Meta rejected the access token")
-	case e.Error.Code == 100 || status == http.StatusNotFound:
-		return fmt.Errorf("check the Messaging account ID (%s)", msg)
+	case status == http.StatusNotFound || strings.Contains(strings.ToLower(e.Error.Message), "does not exist"):
+		// Only an answer that says the account was not found points at the ID.
+		return fmt.Errorf("Meta did not find the Messaging account. Check its ID (%s)", msg)
 	}
 	return fmt.Errorf("%s", msg)
 }

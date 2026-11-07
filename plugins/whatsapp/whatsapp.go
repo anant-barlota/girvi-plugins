@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -338,22 +339,36 @@ func (w *whatsApp) Health(ctx context.Context) sdk.Health {
 	}
 	w.mu.RUnlock()
 
-	out := sdk.Health{Status: corev1.HealthStatus_HEALTH_STATUS_OK, Message: "Running"}
-	enabled := 0
+	ids := make([]string, 0, len(firms))
 	for id, f := range firms {
-		if !f.Enabled {
-			continue
+		if f.Enabled {
+			ids = append(ids, id)
 		}
-		enabled++
+	}
+	sort.Strings(ids)
+
+	out := sdk.Health{Status: corev1.HealthStatus_HEALTH_STATUS_OK}
+	if len(ids) == 0 {
+		out.Message = "Running, not turned on for any firm"
+		return out
+	}
+
+	// The extensions screen shows one line, so it carries what the shop needs to
+	// know: the single firm's message as it is, or each firm's with its name.
+	var lines []string
+	for _, id := range ids {
 		h := w.firmHealth(ctx, id)
 		out.Firms = append(out.Firms, &corev1.FirmHealth{FirmId: id, Status: h.status, Message: h.message})
 		if h.status > out.Status {
-			out.Status, out.Message = h.status, fmt.Sprintf("%s: %s", f.Name, h.message)
+			out.Status = h.status
+		}
+		if len(ids) == 1 {
+			lines = append(lines, h.message)
+		} else {
+			lines = append(lines, fmt.Sprintf("%s: %s", firms[id].Name, h.message))
 		}
 	}
-	if enabled == 0 {
-		out.Message = "Running, not turned on for any firm"
-	}
+	out.Message = strings.Join(lines, " | ")
 	return out
 }
 

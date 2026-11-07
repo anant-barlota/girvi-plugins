@@ -53,6 +53,17 @@ Variables Girvi provides:
 | Payment received | `customer_name`, `loan_number`, `amount_paid`, `balance_due` |
 | Loan closed | `customer_name`, `loan_number`, `weight` |
 
+## If messages are not arriving
+
+Run `bash tools/check-account.sh`. It asks Meta about your account, number and templates and prints what comes
+back. It only reads. The token is typed hidden and never saved or shown, so the output is safe to share.
+It shows, among other things, whether the business is verified, whether the account is approved, the number's
+status and quality rating, and which templates exist and whether Meta approved them.
+
+A message that Girvi shows as **Sent** was accepted by WhatsApp. Meta reports a later failure only by webhook,
+so Girvi cannot see it. Error 131031 (business account locked) is one example: check Business Support Home in
+Meta Business Suite.
+
 ## Trying it
 
 Meta gives a new number a template called `hello_world` and lets you send it to up to five verified numbers

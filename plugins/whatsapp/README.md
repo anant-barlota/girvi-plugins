@@ -61,7 +61,9 @@ for free. **Send test** in Girvi uses it.
 ## Not covered yet
 
 - Delivered and read receipts. Meta reports them by webhook, which a desktop app cannot receive. A message
-  shows as delivered once WhatsApp has accepted it.
+  shows as **Sent** once WhatsApp has accepted it, never as delivered. Meta can still fail it afterwards, for
+  example when the business account is locked, and Girvi will not know. Check Business Support Home in Meta
+  Business Suite if messages are not arriving.
 - Whether each customer has agreed to receive WhatsApp messages. Meta's policy requires it, and keeping that
   consent is the shop's responsibility.
 - Creating templates through the API has been tested against a stand-in for Meta, not against a real account.

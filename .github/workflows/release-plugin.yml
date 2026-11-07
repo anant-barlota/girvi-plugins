@@ -1,0 +1,105 @@
+# Builds a Girvi plugin for every platform Girvi runs on and publishes the programs
+# and their checksums as a GitHub Release. Plugin authors call this from their own
+# repository, so every plugin is built the same way:
+#
+#   on:
+#     push:
+#       tags: ['v*']
+#   jobs:
+#     release:
+#       uses: anant-barlota/girvi-plugins/.github/workflows/release-plugin.yml@v0.1.0-alpha.8
+#       with:
+#         name: webhook
+#
+# The release is made for the tag that triggered it. The version is the tag without
+# its "v" (and without a folder prefix such as "whatsapp/"), and must equal the
+# version the plugin reports about itself.
+name: Release a Girvi plugin
+
+on:
+  workflow_call:
+    inputs:
+      name:
+        description: Short plugin name; the programs are called girvi-plugin-<name>_<version>_<os>_<arch>
+        required: true
+        type: string
+      package:
+        description: Go package to build, relative to the repository root
+        required: false
+        default: "."
+        type: string
+      prerelease:
+        description: Mark the GitHub Release as a pre-release
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - { goos: linux, goarch: amd64 }
+          - { goos: linux, goarch: arm64 }
+          - { goos: darwin, goarch: amd64 }
+          - { goos: darwin, goarch: arm64 }
+          - { goos: windows, goarch: amd64 }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Build
+        env:
+          NAME: ${{ inputs.name }}
+          PACKAGE: ${{ inputs.package }}
+          REF_NAME: ${{ github.ref_name }}
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: "0"
+        run: |
+          set -euo pipefail
+          version="${REF_NAME##*/}"
+          version="${version#v}"
+          ext=""
+          if [ "$GOOS" = "windows" ]; then ext=".exe"; fi
+          mkdir -p dist
+          go build -trimpath -ldflags "-s -w" -o "dist/girvi-plugin-${NAME}_${version}_${GOOS}_${GOARCH}${ext}" "$PACKAGE"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: dist/*
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: dist-*
+          merge-multiple: true
+          path: dist
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+          NAME: ${{ inputs.name }}
+          PRERELEASE: ${{ inputs.prerelease }}
+        run: |
+          set -euo pipefail
+          cd dist
+          sha256sum * > SHA256SUMS
+          flags=()
+          if [ "$PRERELEASE" = "true" ]; then flags+=(--prerelease); fi
+          gh release create "$TAG" ./* --repo "$REPO" --title "${NAME} ${TAG##*/}" \
+            --notes "Programs for Windows, macOS and Linux. Check them against SHA256SUMS, or install from a Girvi catalog, which does it for you." \
+            "${flags[@]}"

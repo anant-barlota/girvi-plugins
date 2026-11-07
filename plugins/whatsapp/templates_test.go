@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"github.com/anant-barlota/girvi-plugins/sdk"
+	deliveryv1 "github.com/anant-barlota/girvi-plugins/sdk/gen/girvi/delivery/v1"
+	notifyv1 "github.com/anant-barlota/girvi-plugins/sdk/gen/girvi/notify/v1"
 )
 
 // fakeMeta behaves like the parts of the Graph API that template setup uses.
@@ -309,5 +311,106 @@ func TestHealthSaysHowTheTemplatesStand(t *testing.T) {
 	off := metaConfigured(t, f, map[string]string{"create_templates": "false"})
 	if s, bad := off.templateSummary("firm-a"); s != "" || bad {
 		t.Errorf("setup off: %q bad=%v", s, bad)
+	}
+}
+
+func TestATemplateThatAlreadyExistsIsExplainedPlainly(t *testing.T) {
+	f := newFakeMeta(t)
+	f.failPost = &struct {
+		status int
+		body   string
+	}{400, `{"error":{"message":"Invalid parameter","code":100,"error_subcode":2388024,` +
+		`"error_user_title":"Content in this language already exists",` +
+		`"error_user_msg":"There is already English content for this template. You can create a new template and try again."}}`}
+	w := metaConfigured(t, f, nil)
+
+	_, problem := w.ensureTemplates(context.Background(), "firm-a")
+	for _, want := range []string{"girvi_pledge_disbursed already exists in your account", "WhatsApp Manager", "Advanced"} {
+		if !strings.Contains(problem, want) {
+			t.Errorf("problem = %q; want it to say %q", problem, want)
+		}
+	}
+	if strings.Contains(problem, "Messaging account ID") {
+		t.Error("an existing template is not an account id problem")
+	}
+}
+
+func TestAProblemWithOneTemplateStillShowsTheOthers(t *testing.T) {
+	f := newFakeMeta(t)
+	w := metaConfigured(t, f, nil)
+	w.setup = map[string]*templateSetup{"firm-a": {
+		at: time.Now(), problem: "Payment received: already exists",
+		statuses: map[string]string{"pledge_disbursed": "APPROVED", "loan_closed": "PENDING"},
+	}}
+	s, bad := w.templateSummary("firm-a")
+	if !bad || !strings.Contains(s, "Payment received: already exists") || !strings.Contains(s, "(1 approved, 1 waiting for Meta)") {
+		t.Errorf("summary = %q bad=%v", s, bad)
+	}
+}
+
+func testItem(firmID string) *deliveryv1.Item {
+	return &deliveryv1.Item{
+		DeliveryId: "t1", Capability: "notify", FirmId: firmID,
+		Payload: &deliveryv1.Item_Notify{Notify: &notifyv1.Message{
+			RecipientE164: "+919876543210", TemplateKey: "test_ping", Language: "en",
+			Vars: map[string]string{"message": "Test message from Girvi"},
+		}},
+	}
+}
+
+func templateParams(f *fakeGraph) []string {
+	tpl := f.got.body["template"].(map[string]any)
+	comps, ok := tpl["components"].([]any)
+	if !ok {
+		return nil
+	}
+	var out []string
+	for _, p := range comps[0].(map[string]any)["parameters"].([]any) {
+		out = append(out, p.(map[string]any)["text"].(string))
+	}
+	return out
+}
+
+func TestTheTestMessagePreviewsLoanCreatedOnceMetaHasApprovedIt(t *testing.T) {
+	f := newFakeGraph(t)
+	w := configured(t, f, map[string]string{"pledge_disbursed_template": "", "test_template": ""})
+
+	// Before approval, and when nothing is known yet: Meta's own hello_world.
+	if _, err := w.Handle(context.Background(), testItem("firm-a")); err != nil {
+		t.Fatal(err)
+	}
+	if name := f.got.body["template"].(map[string]any)["name"]; name != "hello_world" {
+		t.Errorf("before approval the test uses %v; want hello_world", name)
+	}
+
+	w.setup = map[string]*templateSetup{"firm-a": {at: time.Now(), statuses: map[string]string{"pledge_disbursed": "PENDING"}}}
+	_, _ = w.Handle(context.Background(), testItem("firm-a"))
+	if name := f.got.body["template"].(map[string]any)["name"]; name != "hello_world" {
+		t.Errorf("while the template is pending the test uses %v; want hello_world", name)
+	}
+
+	// Once approved: the real template, filled with sample values.
+	w.setup["firm-a"].statuses["pledge_disbursed"] = "APPROVED"
+	if _, err := w.Handle(context.Background(), testItem("firm-a")); err != nil {
+		t.Fatal(err)
+	}
+	if name := f.got.body["template"].(map[string]any)["name"]; name != "girvi_pledge_disbursed" {
+		t.Errorf("template = %v; want the Loan created template", name)
+	}
+	got := templateParams(f)
+	if len(got) != 6 || got[0] != "Test Customer" || got[1] != "TEST-001" {
+		t.Errorf("a preview must use sample values, got %v", got)
+	}
+}
+
+func TestAnExplicitTestTemplateIsAlwaysRespected(t *testing.T) {
+	f := newFakeGraph(t)
+	w := configured(t, f, map[string]string{"test_template": "my_approved_template"})
+	w.setup = map[string]*templateSetup{"firm-a": {at: time.Now(), statuses: map[string]string{"pledge_disbursed": "APPROVED"}}}
+	if _, err := w.Handle(context.Background(), testItem("firm-a")); err != nil {
+		t.Fatal(err)
+	}
+	if name := f.got.body["template"].(map[string]any)["name"]; name != "my_approved_template" {
+		t.Errorf("template = %v; want the shop's choice", name)
 	}
 }

@@ -319,8 +319,12 @@ func (r *Runtime) process(ctx context.Context, q *queue.Queue, row queue.Row) {
 	var blocked *BlockedError
 	switch {
 	case err == nil:
-		_ = q.MarkDelivered(row.DeliveryID, res.ProviderRef, now)
-		r.report(q, row.DeliveryID, deliveryv1.DeliveryState_DELIVERY_STATE_DELIVERED, deliveryv1.ErrorClass_ERROR_CLASS_UNSPECIFIED, "", res.ProviderRef)
+		_ = q.MarkDelivered(row.DeliveryID, res.ProviderRef, now) // finished, whether or not it is confirmed
+		state := deliveryv1.DeliveryState_DELIVERY_STATE_DELIVERED
+		if res.Unconfirmed {
+			state = deliveryv1.DeliveryState_DELIVERY_STATE_SENT
+		}
+		r.report(q, row.DeliveryID, state, deliveryv1.ErrorClass_ERROR_CLASS_UNSPECIFIED, res.Note, res.ProviderRef)
 	case errors.As(err, &perm):
 		_ = q.MarkFailed(row.DeliveryID, perm.Message, now)
 		r.report(q, row.DeliveryID, deliveryv1.DeliveryState_DELIVERY_STATE_FAILED, perm.Class, perm.Message, "")

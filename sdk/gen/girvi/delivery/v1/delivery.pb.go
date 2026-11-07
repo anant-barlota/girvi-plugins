@@ -150,10 +150,14 @@ const (
 	DeliveryState_DELIVERY_STATE_QUEUED      DeliveryState = 1
 	DeliveryState_DELIVERY_STATE_SENDING     DeliveryState = 2
 	DeliveryState_DELIVERY_STATE_RETRYING    DeliveryState = 3
-	DeliveryState_DELIVERY_STATE_DELIVERED   DeliveryState = 4 // for WhatsApp Cloud API: accepted by the provider
+	DeliveryState_DELIVERY_STATE_DELIVERED   DeliveryState = 4 // confirmed delivered
 	DeliveryState_DELIVERY_STATE_FAILED      DeliveryState = 5
 	DeliveryState_DELIVERY_STATE_EXPIRED     DeliveryState = 6
 	DeliveryState_DELIVERY_STATE_BLOCKED     DeliveryState = 7 // e.g. credentials invalid
+	// Handed to the provider, which accepted it but does not tell us whether it
+	// arrived (WhatsApp Cloud API reports that by webhook, which a desktop app
+	// cannot receive). Final, but not a confirmation. A failure can still follow.
+	DeliveryState_DELIVERY_STATE_SENT DeliveryState = 8
 )
 
 // Enum value maps for DeliveryState.
@@ -167,6 +171,7 @@ var (
 		5: "DELIVERY_STATE_FAILED",
 		6: "DELIVERY_STATE_EXPIRED",
 		7: "DELIVERY_STATE_BLOCKED",
+		8: "DELIVERY_STATE_SENT",
 	}
 	DeliveryState_value = map[string]int32{
 		"DELIVERY_STATE_UNSPECIFIED": 0,
@@ -177,6 +182,7 @@ var (
 		"DELIVERY_STATE_FAILED":      5,
 		"DELIVERY_STATE_EXPIRED":     6,
 		"DELIVERY_STATE_BLOCKED":     7,
+		"DELIVERY_STATE_SENT":        8,
 	}
 )
 
@@ -941,7 +947,7 @@ const file_girvi_delivery_v1_delivery_proto_rawDesc = "" +
 	"\x17ERROR_CLASS_UNSUPPORTED\x10\x02\x12\x16\n" +
 	"\x12ERROR_CLASS_CONFIG\x10\x03\x12\x18\n" +
 	"\x14ERROR_CLASS_PROVIDER\x10\x04\x12\x18\n" +
-	"\x14ERROR_CLASS_INTERNAL\x10\x05*\xf4\x01\n" +
+	"\x14ERROR_CLASS_INTERNAL\x10\x05*\x8d\x02\n" +
 	"\rDeliveryState\x12\x1e\n" +
 	"\x1aDELIVERY_STATE_UNSPECIFIED\x10\x00\x12\x19\n" +
 	"\x15DELIVERY_STATE_QUEUED\x10\x01\x12\x1a\n" +
@@ -950,7 +956,8 @@ const file_girvi_delivery_v1_delivery_proto_rawDesc = "" +
 	"\x18DELIVERY_STATE_DELIVERED\x10\x04\x12\x19\n" +
 	"\x15DELIVERY_STATE_FAILED\x10\x05\x12\x1a\n" +
 	"\x16DELIVERY_STATE_EXPIRED\x10\x06\x12\x1a\n" +
-	"\x16DELIVERY_STATE_BLOCKED\x10\a2X\n" +
+	"\x16DELIVERY_STATE_BLOCKED\x10\a\x12\x17\n" +
+	"\x13DELIVERY_STATE_SENT\x10\b2X\n" +
 	"\bConsumer\x12L\n" +
 	"\aConsume\x12\x1b.girvi.delivery.v1.FromHost\x1a .girvi.delivery.v1.FromExtension(\x010\x01BMZKgithub.com/anant-barlota/girvi-plugins/sdk/gen/girvi/delivery/v1;deliveryv1b\x06proto3"
 

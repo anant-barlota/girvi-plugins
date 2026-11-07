@@ -384,3 +384,22 @@ func TestABlockedItemWaitsAndIsDeliveredOnceTheFixIsIn(t *testing.T) {
 		t.Errorf("provider ref = %q", final[0].GetProviderRef())
 	}
 }
+
+func TestAnUnconfirmedSendIsReportedAsSentNotDelivered(t *testing.T) {
+	ext := &fakeExt{handle: func(context.Context, *deliveryv1.Item, int) (Result, error) {
+		return Result{ProviderRef: "wamid.1", Unconfirmed: true, Note: "Accepted by WhatsApp. Delivery is not confirmed."}, nil
+	}}
+	h := newHarness(t, ext, t.TempDir(), fastOpts())
+	s := h.open()
+	s.expectHello()
+
+	s.offer("d1", time.Now().Add(time.Hour))
+	got := s.statuses("d1", deliveryv1.DeliveryState_DELIVERY_STATE_SENT)
+	if got[0].GetProviderRef() != "wamid.1" || got[0].GetMessage() != "Accepted by WhatsApp. Delivery is not confirmed." {
+		t.Errorf("sent status wrong: %v", got[0])
+	}
+	time.Sleep(100 * time.Millisecond)
+	if n := ext.callCount("d1"); n != 1 {
+		t.Errorf("Handle called %d times; an unconfirmed send is still finished, so want 1", n)
+	}
+}

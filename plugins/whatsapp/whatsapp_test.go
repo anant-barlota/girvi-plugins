@@ -274,6 +274,9 @@ func TestHealthChecksCredentialsPerFirm(t *testing.T) {
 	if h.Status != corev1.HealthStatus_HEALTH_STATUS_OK || len(h.Firms) != 1 || !strings.Contains(h.Firms[0].Message, "Shree Jewellers") {
 		t.Fatalf("healthy: %+v", h)
 	}
+	if !strings.Contains(h.Message, "Connected as Shree Jewellers") {
+		t.Errorf("the one line the screen shows must carry what the firm's check found, got %q", h.Message)
+	}
 	if f.got.method != "GET" || f.got.path != "/v21.0/1055" || f.got.auth != "Bearer TOKEN-123" {
 		t.Errorf("health request = %s %s %q", f.got.method, f.got.path, f.got.auth)
 	}

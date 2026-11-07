@@ -261,7 +261,7 @@ func TestAFirmThatIsOffIsNeverSentTo(t *testing.T) {
 		t.Errorf("= %v; want permanent", err)
 	}
 	if f.got.method != "" {
-		t.Error("nothing may be sent for a firm the extension is off for")
+		t.Error("nothing may be sent for a firm the plugin is off for")
 	}
 }
 

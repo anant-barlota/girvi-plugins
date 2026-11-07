@@ -1,4 +1,4 @@
-// Command echo is the smallest extension on the v0 contract. It takes custody of
+// Command echo is the smallest plugin on the v0 contract. It takes custody of
 // every notify message and event, appends a line to echo.log in its data
 // directory, and reports the line number as the provider reference. Host tests
 // use it as a fixture.

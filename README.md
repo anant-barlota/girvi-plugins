@@ -1,8 +1,8 @@
 # Girvi Plugins SDK & Reference
 
-Welcome to **`girvi-plugins`**, the official developer SDK, Protobuf contract specifications, and extension directory for the **Girvi Pawn Broker** desktop application.
+Welcome to **`girvi-plugins`**, the official developer SDK, Protobuf contract specifications, and plugin directory for the **Girvi Pawn Broker** desktop application.
 
-Girvi extensions allow you to integrate messaging gateways (WhatsApp, SMS, Telegram), biometric fingerprint scanners, thermal receipt printers, and external accounting software (Tally, Busy, QuickBooks) without modifying Girvi's core codebase.
+Girvi plugins allow you to integrate messaging gateways (WhatsApp, SMS, Telegram), biometric fingerprint scanners, thermal receipt printers, and external accounting software (Tally, Busy, QuickBooks) without modifying Girvi's core codebase.
 
 ---
 
@@ -10,7 +10,7 @@ Girvi extensions allow you to integrate messaging gateways (WhatsApp, SMS, Teleg
 
 ```
 ┌────────────────────────────────┐         gRPC IPC          ┌──────────────────────────────────┐
-│         Girvi Desktop          │ ◄──────────────────────►  │        Extension Binary          │
+│         Girvi Desktop          │ ◄──────────────────────►  │        Plugin Binary          │
 │   (Core Ledger & Database)     │   (Unix Socket / Pipes)   │  (girvi-plugin-whatsapp, etc.)   │
 └────────────────────────────────┘                           └──────────────────────────────────┘
                  │                                                             │
@@ -19,10 +19,10 @@ Girvi extensions allow you to integrate messaging gateways (WhatsApp, SMS, Teleg
    ~/.config/girvi/tenants/*.db                              ~/.config/girvi/plugin_data/<id>/
 ```
 
-- **Process Isolation:** Extensions run as independent subprocesses communicating over standard input/output using HashiCorp `go-plugin` and gRPC.
-- **Process Sandboxing:** On Linux, extensions are wrapped in unprivileged Bubblewrap (`bwrap`) mount namespaces. The core pawnbroking database is **invisible and inaccessible** to extension processes.
-- **Dedicated Storage:** The host injects `GIRVI_PLUGIN_DATA_DIR=~/.config/girvi/plugin_data/<id>/`. Extensions can freely create and manage private SQLite databases, caches, or logs in this directory.
-- **Concurrent Fan-Out:** The host broadcasts events to all active extensions concurrently in parallel goroutines, with a fail-safe **5-second deadline context** per extension.
+- **Process Isolation:** Plugins run as independent subprocesses communicating over standard input/output using HashiCorp `go-plugin` and gRPC.
+- **Process Sandboxing:** On Linux, plugins are wrapped in unprivileged Bubblewrap (`bwrap`) mount namespaces. The core pawnbroking database is **invisible and inaccessible** to plugin processes.
+- **Dedicated Storage:** The host injects `GIRVI_PLUGIN_DATA_DIR=~/.config/girvi/plugin_data/<id>/`. Plugins can freely create and manage private SQLite databases, caches, or logs in this directory.
+- **Concurrent Fan-Out:** The host broadcasts events to all active plugins concurrently in parallel goroutines, with a fail-safe **5-second deadline context** per plugin.
 
 ---
 
@@ -127,7 +127,7 @@ func (p *MyPlugin) SendMessage(ctx context.Context, req *pluginv1.SendMessageReq
 		// Gracefully acknowledge unhandled events without error
 		return &pluginv1.SendMessageResponse{
 			Success:      true,
-			ErrorMessage: "ignored: event not handled by this extension",
+			ErrorMessage: "ignored: event not handled by this plugin",
 		}, nil
 	}
 }
@@ -146,7 +146,7 @@ Compile your executable with the prefix `girvi-plugin-*` directly into Girvi's p
 # Build for your operating system:
 go build -o ~/.config/girvi/plugins/girvi-plugin-fast2sms .
 
-# In Girvi Desktop, navigate to Extensions -> click "Scan Directory".
+# In Girvi Desktop, navigate to Plugins -> click "Scan Directory".
 ```
 
 ---
@@ -182,9 +182,9 @@ You do not need to build your own configuration UI. When your plugin returns `Co
 
 ## Event Opt-Out & Filtering
 
-Pawnbrokers or extension authors can opt out of specific events:
+Pawnbrokers or plugin authors can opt out of specific events:
 - **Host-side toggle:** Setting `notify_on_<template_key> = "false"` in plugin configuration skips IPC dispatch completely.
-- **Plugin-side no-op:** If an extension receives an event it does not handle, returning `Success: true` with an explanatory message prevents error alerts or retry loops.
+- **Plugin-side no-op:** If a plugin receives an event it does not handle, returning `Success: true` with an explanatory message prevents error alerts or retry loops.
 
 ---
 
@@ -193,8 +193,8 @@ Pawnbrokers or extension authors can opt out of specific events:
 1. **Quarantine by Default:** New or modified binaries detected on disk are quarantined based on SHA-256 checksum until the pawnbroker clicks **"Trust & Enable"**.
 2. **Filesystem Sandboxing:** 
    - Linux: Bubblewrap (`bwrap`) limits visibility strictly to system libraries and the plugin's dedicated data directory.
-   - Core loan ledgers, customer records, and financial databases cannot be read or modified by extension processes.
-3. **No Sudo/Root:** Extensions never require elevated system privileges.
+   - Core loan ledgers, customer records, and financial databases cannot be read or modified by plugin processes.
+3. **No Sudo/Root:** Plugins never require elevated system privileges.
 
 ---
 

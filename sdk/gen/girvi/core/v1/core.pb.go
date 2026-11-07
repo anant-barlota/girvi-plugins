@@ -4,7 +4,7 @@
 // 	protoc        v3.21.12
 // source: girvi/core/v1/core.proto
 
-// core.v1: the service every extension implements, whatever else it does.
+// core.v1: the service every plugin implements, whatever else it does.
 // It carries no events and no documents.
 
 package corev1
@@ -241,7 +241,7 @@ type InitializeRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	HostVersion   string                 `protobuf:"bytes,1,opt,name=host_version,json=hostVersion,proto3" json:"host_version,omitempty"`
 	HostSupports  []*CapabilityVersions  `protobuf:"bytes,2,rep,name=host_supports,json=hostSupports,proto3" json:"host_supports,omitempty"`
-	DataDir       string                 `protobuf:"bytes,3,opt,name=data_dir,json=dataDir,proto3" json:"data_dir,omitempty"` // the extension's private directory
+	DataDir       string                 `protobuf:"bytes,3,opt,name=data_dir,json=dataDir,proto3" json:"data_dir,omitempty"` // the plugin's private directory
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -298,17 +298,17 @@ func (x *InitializeRequest) GetDataDir() string {
 }
 
 type InitializeResponse struct {
-	state            protoimpl.MessageState `protogen:"open.v1"`
-	ExtensionId      string                 `protobuf:"bytes,1,opt,name=extension_id,json=extensionId,proto3" json:"extension_id,omitempty"` // must equal the id in the signed manifest
-	ExtensionVersion string                 `protobuf:"bytes,2,opt,name=extension_version,json=extensionVersion,proto3" json:"extension_version,omitempty"`
-	Capabilities     []*Capability          `protobuf:"bytes,3,rep,name=capabilities,proto3" json:"capabilities,omitempty"`
-	Requires         []string               `protobuf:"bytes,4,rep,name=requires,proto3" json:"requires,omitempty"` // "network", "storage.private"
-	Settings         []*SettingField        `protobuf:"bytes,5,rep,name=settings,proto3" json:"settings,omitempty"`
-	Name             string                 `protobuf:"bytes,6,opt,name=name,proto3" json:"name,omitempty"` // shown in the extensions screen
-	Author           string                 `protobuf:"bytes,7,opt,name=author,proto3" json:"author,omitempty"`
-	Description      string                 `protobuf:"bytes,8,opt,name=description,proto3" json:"description,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	PluginId      string                 `protobuf:"bytes,1,opt,name=plugin_id,json=pluginId,proto3" json:"plugin_id,omitempty"` // must equal the id in the signed manifest
+	PluginVersion string                 `protobuf:"bytes,2,opt,name=plugin_version,json=pluginVersion,proto3" json:"plugin_version,omitempty"`
+	Capabilities  []*Capability          `protobuf:"bytes,3,rep,name=capabilities,proto3" json:"capabilities,omitempty"`
+	Requires      []string               `protobuf:"bytes,4,rep,name=requires,proto3" json:"requires,omitempty"` // "network", "storage.private"
+	Settings      []*SettingField        `protobuf:"bytes,5,rep,name=settings,proto3" json:"settings,omitempty"`
+	Name          string                 `protobuf:"bytes,6,opt,name=name,proto3" json:"name,omitempty"` // shown in the plugins screen
+	Author        string                 `protobuf:"bytes,7,opt,name=author,proto3" json:"author,omitempty"`
+	Description   string                 `protobuf:"bytes,8,opt,name=description,proto3" json:"description,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *InitializeResponse) Reset() {
@@ -341,16 +341,16 @@ func (*InitializeResponse) Descriptor() ([]byte, []int) {
 	return file_girvi_core_v1_core_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *InitializeResponse) GetExtensionId() string {
+func (x *InitializeResponse) GetPluginId() string {
 	if x != nil {
-		return x.ExtensionId
+		return x.PluginId
 	}
 	return ""
 }
 
-func (x *InitializeResponse) GetExtensionVersion() string {
+func (x *InitializeResponse) GetPluginVersion() string {
 	if x != nil {
-		return x.ExtensionVersion
+		return x.PluginVersion
 	}
 	return ""
 }
@@ -665,7 +665,7 @@ type FirmHealth struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	FirmId        string                 `protobuf:"bytes,1,opt,name=firm_id,json=firmId,proto3" json:"firm_id,omitempty"`
 	Status        HealthStatus           `protobuf:"varint,2,opt,name=status,proto3,enum=girvi.core.v1.HealthStatus" json:"status,omitempty"`
-	Message       string                 `protobuf:"bytes,3,opt,name=message,proto3" json:"message,omitempty"` // shown in the extensions screen; no customer data
+	Message       string                 `protobuf:"bytes,3,opt,name=message,proto3" json:"message,omitempty"` // shown in the plugins screen; no customer data
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -916,10 +916,10 @@ const file_girvi_core_v1_core_proto_rawDesc = "" +
 	"\x11InitializeRequest\x12!\n" +
 	"\fhost_version\x18\x01 \x01(\tR\vhostVersion\x12F\n" +
 	"\rhost_supports\x18\x02 \x03(\v2!.girvi.core.v1.CapabilityVersionsR\fhostSupports\x12\x19\n" +
-	"\bdata_dir\x18\x03 \x01(\tR\adataDir\"\xc6\x02\n" +
-	"\x12InitializeResponse\x12!\n" +
-	"\fextension_id\x18\x01 \x01(\tR\vextensionId\x12+\n" +
-	"\x11extension_version\x18\x02 \x01(\tR\x10extensionVersion\x12=\n" +
+	"\bdata_dir\x18\x03 \x01(\tR\adataDir\"\xba\x02\n" +
+	"\x12InitializeResponse\x12\x1b\n" +
+	"\tplugin_id\x18\x01 \x01(\tR\bpluginId\x12%\n" +
+	"\x0eplugin_version\x18\x02 \x01(\tR\rpluginVersion\x12=\n" +
 	"\fcapabilities\x18\x03 \x03(\v2\x19.girvi.core.v1.CapabilityR\fcapabilities\x12\x1a\n" +
 	"\brequires\x18\x04 \x03(\tR\brequires\x127\n" +
 	"\bsettings\x18\x05 \x03(\v2\x1b.girvi.core.v1.SettingFieldR\bsettings\x12\x12\n" +
@@ -977,8 +977,8 @@ const file_girvi_core_v1_core_proto_rawDesc = "" +
 	"\x19HEALTH_STATUS_UNSPECIFIED\x10\x00\x12\x14\n" +
 	"\x10HEALTH_STATUS_OK\x10\x01\x12\x1a\n" +
 	"\x16HEALTH_STATUS_DEGRADED\x10\x02\x12\x1b\n" +
-	"\x17HEALTH_STATUS_UNHEALTHY\x10\x032\xc2\x02\n" +
-	"\tExtension\x12Q\n" +
+	"\x17HEALTH_STATUS_UNHEALTHY\x10\x032\xbf\x02\n" +
+	"\x06Plugin\x12Q\n" +
 	"\n" +
 	"Initialize\x12 .girvi.core.v1.InitializeRequest\x1a!.girvi.core.v1.InitializeResponse\x12N\n" +
 	"\tConfigure\x12\x1f.girvi.core.v1.ConfigureRequest\x1a .girvi.core.v1.ConfigureResponse\x12E\n" +
@@ -1033,14 +1033,14 @@ var file_girvi_core_v1_core_proto_depIdxs = []int32{
 	1,  // 9: girvi.core.v1.HealthResponse.status:type_name -> girvi.core.v1.HealthStatus
 	10, // 10: girvi.core.v1.HealthResponse.firms:type_name -> girvi.core.v1.FirmHealth
 	7,  // 11: girvi.core.v1.ConfigureRequest.FirmsEntry.value:type_name -> girvi.core.v1.FirmSettings
-	4,  // 12: girvi.core.v1.Extension.Initialize:input_type -> girvi.core.v1.InitializeRequest
-	8,  // 13: girvi.core.v1.Extension.Configure:input_type -> girvi.core.v1.ConfigureRequest
-	11, // 14: girvi.core.v1.Extension.Health:input_type -> girvi.core.v1.HealthRequest
-	13, // 15: girvi.core.v1.Extension.Shutdown:input_type -> girvi.core.v1.ShutdownRequest
-	5,  // 16: girvi.core.v1.Extension.Initialize:output_type -> girvi.core.v1.InitializeResponse
-	9,  // 17: girvi.core.v1.Extension.Configure:output_type -> girvi.core.v1.ConfigureResponse
-	12, // 18: girvi.core.v1.Extension.Health:output_type -> girvi.core.v1.HealthResponse
-	14, // 19: girvi.core.v1.Extension.Shutdown:output_type -> girvi.core.v1.ShutdownResponse
+	4,  // 12: girvi.core.v1.Plugin.Initialize:input_type -> girvi.core.v1.InitializeRequest
+	8,  // 13: girvi.core.v1.Plugin.Configure:input_type -> girvi.core.v1.ConfigureRequest
+	11, // 14: girvi.core.v1.Plugin.Health:input_type -> girvi.core.v1.HealthRequest
+	13, // 15: girvi.core.v1.Plugin.Shutdown:input_type -> girvi.core.v1.ShutdownRequest
+	5,  // 16: girvi.core.v1.Plugin.Initialize:output_type -> girvi.core.v1.InitializeResponse
+	9,  // 17: girvi.core.v1.Plugin.Configure:output_type -> girvi.core.v1.ConfigureResponse
+	12, // 18: girvi.core.v1.Plugin.Health:output_type -> girvi.core.v1.HealthResponse
+	14, // 19: girvi.core.v1.Plugin.Shutdown:output_type -> girvi.core.v1.ShutdownResponse
 	16, // [16:20] is the sub-list for method output_type
 	12, // [12:16] is the sub-list for method input_type
 	12, // [12:12] is the sub-list for extension type_name

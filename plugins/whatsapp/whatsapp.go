@@ -139,7 +139,7 @@ func (w *whatsApp) Handle(ctx context.Context, item *deliveryv1.Item) (sdk.Resul
 	}
 	values, _, enabled := w.firm(item.GetFirmId())
 	if !enabled {
-		return sdk.Result{}, sdk.Permanent(deliveryv1.ErrorClass_ERROR_CLASS_CONFIG, "this extension is not turned on for the firm")
+		return sdk.Result{}, sdk.Permanent(deliveryv1.ErrorClass_ERROR_CLASS_CONFIG, "this plugin is not turned on for the firm")
 	}
 
 	phoneNumberID := strings.TrimSpace(values["phone_number_id"])
@@ -226,7 +226,7 @@ func (w *whatsApp) template(values map[string]string, key, firmID string) (templ
 		}
 		return template{name: name, language: valueOr(values[t.key+"_language"], "en"), params: params}, nil
 	}
-	return template{}, sdk.Permanent(deliveryv1.ErrorClass_ERROR_CLASS_UNSUPPORTED, "this extension does not send %q messages", key)
+	return template{}, sdk.Permanent(deliveryv1.ErrorClass_ERROR_CLASS_UNSUPPORTED, "this plugin does not send %q messages", key)
 }
 
 // sanitizeParam meets WhatsApp's rules for template parameters: no new lines or
@@ -304,7 +304,7 @@ type apiError struct {
 
 // classify decides what a failed call means. The meaning of each code follows
 // Meta's WhatsApp Cloud API error list and should be checked against the current
-// documentation when this extension is updated.
+// documentation when this plugin is updated.
 //
 //   - A problem the shop fixes in settings (token, template, number) is blocked:
 //     the message waits and is sent once the setting is right.
@@ -380,7 +380,7 @@ func (w *whatsApp) Health(ctx context.Context) sdk.Health {
 		return out
 	}
 
-	// The extensions screen shows one line, so it carries what the shop needs to
+	// The plugins screen shows one line, so it carries what the shop needs to
 	// know: the single firm's message as it is, or each firm's with its name.
 	var lines []string
 	for _, id := range ids {

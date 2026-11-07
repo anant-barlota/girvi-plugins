@@ -10,7 +10,7 @@
 //   * Money is integer paise, weight is integer milligrams, dates are ISO 8601.
 //     No floats for money or weight.
 //   * Each value carries the canonical number and a host-formatted display string.
-//     Extensions never format or compute money themselves.
+//     Plugins never format or compute money themselves.
 //   * Nothing here carries an ID document number. Those never leave the host.
 //   * Adding a field is compatible. Removing or renaming one needs a new major
 //     version of the package.
@@ -679,7 +679,7 @@ func (x *Firm) GetLocale() string {
 }
 
 // The customer on an event or document. Contact and photo are separate optional
-// sections that an extension only receives if it declared the matching option.
+// sections that a plugin only receives if it declared the matching option.
 type Customer struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`

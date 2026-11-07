@@ -1,4 +1,4 @@
-// Package queue is the durable work queue an extension keeps once it has
+// Package queue is the durable work queue a plugin keeps once it has
 // accepted custody of an item. Items survive restarts, a re-offer of the same
 // delivery id is recognized, and status updates wait here until the stream to
 // the host is open.

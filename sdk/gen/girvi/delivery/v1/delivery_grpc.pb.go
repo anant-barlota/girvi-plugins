@@ -4,12 +4,12 @@
 // - protoc             v3.21.12
 // source: girvi/delivery/v1/delivery.proto
 
-// delivery.v1: how events and notify messages reach an extension.
+// delivery.v1: how events and notify messages reach a plugin.
 //
-// The host opens one long-lived bidirectional stream to each running extension
+// The host opens one long-lived bidirectional stream to each running plugin
 // (as the gRPC client).
-// The extension pulls work with Ready and answers each item with an Ack. The
-// host stops at handoff: after ACCEPTED the extension owns retries, rate limits
+// The plugin pulls work with Ready and answers each item with an Ack. The
+// host stops at handoff: after ACCEPTED the plugin owns retries, rate limits
 // and staleness, and reports final states with StatusUpdate.
 
 package deliveryv1
@@ -34,11 +34,11 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ConsumerClient interface {
-	// The host is the gRPC client and the extension is the server, so the request
+	// The host is the gRPC client and the plugin is the server, so the request
 	// stream carries what the host sends (FromHost) and the response stream what
-	// the extension sends (FromExtension). The extension sends first: Subscribe,
+	// the plugin sends (FromPlugin). The plugin sends first: Subscribe,
 	// then Ready.
-	Consume(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[FromHost, FromExtension], error)
+	Consume(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[FromHost, FromPlugin], error)
 }
 
 type consumerClient struct {
@@ -49,28 +49,28 @@ func NewConsumerClient(cc grpc.ClientConnInterface) ConsumerClient {
 	return &consumerClient{cc}
 }
 
-func (c *consumerClient) Consume(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[FromHost, FromExtension], error) {
+func (c *consumerClient) Consume(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[FromHost, FromPlugin], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	stream, err := c.cc.NewStream(ctx, &Consumer_ServiceDesc.Streams[0], Consumer_Consume_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &grpc.GenericClientStream[FromHost, FromExtension]{ClientStream: stream}
+	x := &grpc.GenericClientStream[FromHost, FromPlugin]{ClientStream: stream}
 	return x, nil
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type Consumer_ConsumeClient = grpc.BidiStreamingClient[FromHost, FromExtension]
+type Consumer_ConsumeClient = grpc.BidiStreamingClient[FromHost, FromPlugin]
 
 // ConsumerServer is the server API for Consumer service.
 // All implementations must embed UnimplementedConsumerServer
 // for forward compatibility.
 type ConsumerServer interface {
-	// The host is the gRPC client and the extension is the server, so the request
+	// The host is the gRPC client and the plugin is the server, so the request
 	// stream carries what the host sends (FromHost) and the response stream what
-	// the extension sends (FromExtension). The extension sends first: Subscribe,
+	// the plugin sends (FromPlugin). The plugin sends first: Subscribe,
 	// then Ready.
-	Consume(grpc.BidiStreamingServer[FromHost, FromExtension]) error
+	Consume(grpc.BidiStreamingServer[FromHost, FromPlugin]) error
 	mustEmbedUnimplementedConsumerServer()
 }
 
@@ -81,7 +81,7 @@ type ConsumerServer interface {
 // pointer dereference when methods are called.
 type UnimplementedConsumerServer struct{}
 
-func (UnimplementedConsumerServer) Consume(grpc.BidiStreamingServer[FromHost, FromExtension]) error {
+func (UnimplementedConsumerServer) Consume(grpc.BidiStreamingServer[FromHost, FromPlugin]) error {
 	return status.Errorf(codes.Unimplemented, "method Consume not implemented")
 }
 func (UnimplementedConsumerServer) mustEmbedUnimplementedConsumerServer() {}
@@ -106,11 +106,11 @@ func RegisterConsumerServer(s grpc.ServiceRegistrar, srv ConsumerServer) {
 }
 
 func _Consumer_Consume_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(ConsumerServer).Consume(&grpc.GenericServerStream[FromHost, FromExtension]{ServerStream: stream})
+	return srv.(ConsumerServer).Consume(&grpc.GenericServerStream[FromHost, FromPlugin]{ServerStream: stream})
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type Consumer_ConsumeServer = grpc.BidiStreamingServer[FromHost, FromExtension]
+type Consumer_ConsumeServer = grpc.BidiStreamingServer[FromHost, FromPlugin]
 
 // Consumer_ServiceDesc is the grpc.ServiceDesc for Consumer service.
 // It's only intended for direct use with grpc.RegisterService,

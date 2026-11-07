@@ -4,7 +4,7 @@
 // 	protoc        v3.21.12
 // source: girvi/notify/v1/notify.proto
 
-// A message the host has composed for an extension to transport. The extension
+// A message the host has composed for a plugin to transport. The plugin
 // does not decide the content. It maps template_key and vars onto its provider
 // (for WhatsApp, an approved template name and its ordered parameters).
 

@@ -4,7 +4,7 @@ Sends the messages Girvi composes (loan created, payment received, loan closed) 
 customers as approved WhatsApp templates, from your own WhatsApp Business number.
 
 Each firm uses its own number and token. Nothing is sent until you turn the
-extension on for a firm in Girvi.
+plugin on for a firm in Girvi.
 
 ## Set it up
 
@@ -28,12 +28,12 @@ You do them once per business number.
 
 **In Girvi**
 
-4. Open **Extensions**, approve **WhatsApp Cloud API**, and open its **Settings**. Enter the three values
+4. Open **Plugins**, approve **WhatsApp Cloud API**, and open its **Settings**. Enter the three values
    above. Leave "Set up message templates for me" on.
-5. Turn the extension on for your firm.
+5. Turn the plugin on for your firm.
 
 Girvi then creates three message templates in your account (loan created, payment received, loan closed) in
-the Utility category and sends them to Meta for approval. The extension's status shows how many are approved.
+the Utility category and sends them to Meta for approval. The plugin's status shows how many are approved.
 Until a template is approved, its messages wait, and they are sent once it is.
 The `whatsapp_business_management` permission is what lets Girvi create them.
 
@@ -78,4 +78,4 @@ for free. **Send test** in Girvi uses it.
 - Whether each customer has agreed to receive WhatsApp messages. Meta's policy requires it, and keeping that
   consent is the shop's responsibility.
 - Creating templates through the API has been tested against a stand-in for Meta, not against a real account.
-  If Meta refuses a template, the extension's status says why, and you can create it by hand instead.
+  If Meta refuses a template, the plugin's status says why, and you can create it by hand instead.

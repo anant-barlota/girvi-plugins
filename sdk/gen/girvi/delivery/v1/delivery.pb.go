@@ -4,12 +4,12 @@
 // 	protoc        v3.21.12
 // source: girvi/delivery/v1/delivery.proto
 
-// delivery.v1: how events and notify messages reach an extension.
+// delivery.v1: how events and notify messages reach a plugin.
 //
-// The host opens one long-lived bidirectional stream to each running extension
+// The host opens one long-lived bidirectional stream to each running plugin
 // (as the gRPC client).
-// The extension pulls work with Ready and answers each item with an Ack. The
-// host stops at handoff: after ACCEPTED the extension owns retries, rate limits
+// The plugin pulls work with Ready and answers each item with an Ack. The
+// host stops at handoff: after ACCEPTED the plugin owns retries, rate limits
 // and staleness, and reports final states with StatusUpdate.
 
 package deliveryv1
@@ -37,7 +37,7 @@ type AckResult int32
 
 const (
 	AckResult_ACK_RESULT_UNSPECIFIED AckResult = 0
-	AckResult_ACK_RESULT_ACCEPTED    AckResult = 1 // persisted; the extension now owns it
+	AckResult_ACK_RESULT_ACCEPTED    AckResult = 1 // persisted; the plugin now owns it
 	AckResult_ACK_RESULT_DELIVERED   AckResult = 2 // finished synchronously
 	AckResult_ACK_RESULT_REJECTED    AckResult = 3 // permanent failure
 )
@@ -213,33 +213,33 @@ func (DeliveryState) EnumDescriptor() ([]byte, []int) {
 	return file_girvi_delivery_v1_delivery_proto_rawDescGZIP(), []int{2}
 }
 
-type FromExtension struct {
+type FromPlugin struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Types that are valid to be assigned to Msg:
 	//
-	//	*FromExtension_Subscribe
-	//	*FromExtension_Ready
-	//	*FromExtension_Ack
-	//	*FromExtension_Status
-	Msg           isFromExtension_Msg `protobuf_oneof:"msg"`
+	//	*FromPlugin_Subscribe
+	//	*FromPlugin_Ready
+	//	*FromPlugin_Ack
+	//	*FromPlugin_Status
+	Msg           isFromPlugin_Msg `protobuf_oneof:"msg"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *FromExtension) Reset() {
-	*x = FromExtension{}
+func (x *FromPlugin) Reset() {
+	*x = FromPlugin{}
 	mi := &file_girvi_delivery_v1_delivery_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *FromExtension) String() string {
+func (x *FromPlugin) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*FromExtension) ProtoMessage() {}
+func (*FromPlugin) ProtoMessage() {}
 
-func (x *FromExtension) ProtoReflect() protoreflect.Message {
+func (x *FromPlugin) ProtoReflect() protoreflect.Message {
 	mi := &file_girvi_delivery_v1_delivery_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -251,84 +251,84 @@ func (x *FromExtension) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use FromExtension.ProtoReflect.Descriptor instead.
-func (*FromExtension) Descriptor() ([]byte, []int) {
+// Deprecated: Use FromPlugin.ProtoReflect.Descriptor instead.
+func (*FromPlugin) Descriptor() ([]byte, []int) {
 	return file_girvi_delivery_v1_delivery_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *FromExtension) GetMsg() isFromExtension_Msg {
+func (x *FromPlugin) GetMsg() isFromPlugin_Msg {
 	if x != nil {
 		return x.Msg
 	}
 	return nil
 }
 
-func (x *FromExtension) GetSubscribe() *Subscribe {
+func (x *FromPlugin) GetSubscribe() *Subscribe {
 	if x != nil {
-		if x, ok := x.Msg.(*FromExtension_Subscribe); ok {
+		if x, ok := x.Msg.(*FromPlugin_Subscribe); ok {
 			return x.Subscribe
 		}
 	}
 	return nil
 }
 
-func (x *FromExtension) GetReady() *Ready {
+func (x *FromPlugin) GetReady() *Ready {
 	if x != nil {
-		if x, ok := x.Msg.(*FromExtension_Ready); ok {
+		if x, ok := x.Msg.(*FromPlugin_Ready); ok {
 			return x.Ready
 		}
 	}
 	return nil
 }
 
-func (x *FromExtension) GetAck() *Ack {
+func (x *FromPlugin) GetAck() *Ack {
 	if x != nil {
-		if x, ok := x.Msg.(*FromExtension_Ack); ok {
+		if x, ok := x.Msg.(*FromPlugin_Ack); ok {
 			return x.Ack
 		}
 	}
 	return nil
 }
 
-func (x *FromExtension) GetStatus() *StatusUpdate {
+func (x *FromPlugin) GetStatus() *StatusUpdate {
 	if x != nil {
-		if x, ok := x.Msg.(*FromExtension_Status); ok {
+		if x, ok := x.Msg.(*FromPlugin_Status); ok {
 			return x.Status
 		}
 	}
 	return nil
 }
 
-type isFromExtension_Msg interface {
-	isFromExtension_Msg()
+type isFromPlugin_Msg interface {
+	isFromPlugin_Msg()
 }
 
-type FromExtension_Subscribe struct {
+type FromPlugin_Subscribe struct {
 	Subscribe *Subscribe `protobuf:"bytes,1,opt,name=subscribe,proto3,oneof"` // must be the first message
 }
 
-type FromExtension_Ready struct {
+type FromPlugin_Ready struct {
 	Ready *Ready `protobuf:"bytes,2,opt,name=ready,proto3,oneof"`
 }
 
-type FromExtension_Ack struct {
+type FromPlugin_Ack struct {
 	Ack *Ack `protobuf:"bytes,3,opt,name=ack,proto3,oneof"`
 }
 
-type FromExtension_Status struct {
+type FromPlugin_Status struct {
 	Status *StatusUpdate `protobuf:"bytes,4,opt,name=status,proto3,oneof"`
 }
 
-func (*FromExtension_Subscribe) isFromExtension_Msg() {}
+func (*FromPlugin_Subscribe) isFromPlugin_Msg() {}
 
-func (*FromExtension_Ready) isFromExtension_Msg() {}
+func (*FromPlugin_Ready) isFromPlugin_Msg() {}
 
-func (*FromExtension_Ack) isFromExtension_Msg() {}
+func (*FromPlugin_Ack) isFromPlugin_Msg() {}
 
-func (*FromExtension_Status) isFromExtension_Msg() {}
+func (*FromPlugin_Status) isFromPlugin_Msg() {}
 
 // The capabilities to receive. The host validates them against the approved
-// manifest and the firms the extension is enabled for.
+// manifest and the firms the plugin is enabled for.
 type Subscribe struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Capabilities  []*v1.Capability       `protobuf:"bytes,1,rep,name=capabilities,proto3" json:"capabilities,omitempty"`
@@ -669,7 +669,7 @@ type Item struct {
 	CapabilityVersion uint32                 `protobuf:"varint,3,opt,name=capability_version,json=capabilityVersion,proto3" json:"capability_version,omitempty"`
 	FirmId            string                 `protobuf:"bytes,4,opt,name=firm_id,json=firmId,proto3" json:"firm_id,omitempty"`
 	OccurredAt        *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=occurred_at,json=occurredAt,proto3" json:"occurred_at,omitempty"`
-	ExpiresAt         *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"` // after this the extension drops it
+	ExpiresAt         *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"` // after this the plugin drops it
 	Attempt           uint32                 `protobuf:"varint,7,opt,name=attempt,proto3" json:"attempt,omitempty"`                     // offers so far, starting at 1
 	// Types that are valid to be assigned to Payload:
 	//
@@ -881,8 +881,9 @@ var File_girvi_delivery_v1_delivery_proto protoreflect.FileDescriptor
 
 const file_girvi_delivery_v1_delivery_proto_rawDesc = "" +
 	"\n" +
-	" girvi/delivery/v1/delivery.proto\x12\x11girvi.delivery.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x18girvi/core/v1/core.proto\x1a\x1cgirvi/events/v1/events.proto\x1a\x1cgirvi/notify/v1/notify.proto\"\xed\x01\n" +
-	"\rFromExtension\x12<\n" +
+	" girvi/delivery/v1/delivery.proto\x12\x11girvi.delivery.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x18girvi/core/v1/core.proto\x1a\x1cgirvi/events/v1/events.proto\x1a\x1cgirvi/notify/v1/notify.proto\"\xea\x01\n" +
+	"\n" +
+	"FromPlugin\x12<\n" +
 	"\tsubscribe\x18\x01 \x01(\v2\x1c.girvi.delivery.v1.SubscribeH\x00R\tsubscribe\x120\n" +
 	"\x05ready\x18\x02 \x01(\v2\x18.girvi.delivery.v1.ReadyH\x00R\x05ready\x12*\n" +
 	"\x03ack\x18\x03 \x01(\v2\x16.girvi.delivery.v1.AckH\x00R\x03ack\x129\n" +
@@ -957,9 +958,9 @@ const file_girvi_delivery_v1_delivery_proto_rawDesc = "" +
 	"\x15DELIVERY_STATE_FAILED\x10\x05\x12\x1a\n" +
 	"\x16DELIVERY_STATE_EXPIRED\x10\x06\x12\x1a\n" +
 	"\x16DELIVERY_STATE_BLOCKED\x10\a\x12\x17\n" +
-	"\x13DELIVERY_STATE_SENT\x10\b2X\n" +
-	"\bConsumer\x12L\n" +
-	"\aConsume\x12\x1b.girvi.delivery.v1.FromHost\x1a .girvi.delivery.v1.FromExtension(\x010\x01BMZKgithub.com/anant-barlota/girvi-plugins/sdk/gen/girvi/delivery/v1;deliveryv1b\x06proto3"
+	"\x13DELIVERY_STATE_SENT\x10\b2U\n" +
+	"\bConsumer\x12I\n" +
+	"\aConsume\x12\x1b.girvi.delivery.v1.FromHost\x1a\x1d.girvi.delivery.v1.FromPlugin(\x010\x01BMZKgithub.com/anant-barlota/girvi-plugins/sdk/gen/girvi/delivery/v1;deliveryv1b\x06proto3"
 
 var (
 	file_girvi_delivery_v1_delivery_proto_rawDescOnce sync.Once
@@ -979,7 +980,7 @@ var file_girvi_delivery_v1_delivery_proto_goTypes = []any{
 	(AckResult)(0),                // 0: girvi.delivery.v1.AckResult
 	(ErrorClass)(0),               // 1: girvi.delivery.v1.ErrorClass
 	(DeliveryState)(0),            // 2: girvi.delivery.v1.DeliveryState
-	(*FromExtension)(nil),         // 3: girvi.delivery.v1.FromExtension
+	(*FromPlugin)(nil),            // 3: girvi.delivery.v1.FromPlugin
 	(*Subscribe)(nil),             // 4: girvi.delivery.v1.Subscribe
 	(*Ready)(nil),                 // 5: girvi.delivery.v1.Ready
 	(*Ack)(nil),                   // 6: girvi.delivery.v1.Ack
@@ -995,10 +996,10 @@ var file_girvi_delivery_v1_delivery_proto_goTypes = []any{
 	(*v12.Message)(nil),           // 16: girvi.notify.v1.Message
 }
 var file_girvi_delivery_v1_delivery_proto_depIdxs = []int32{
-	4,  // 0: girvi.delivery.v1.FromExtension.subscribe:type_name -> girvi.delivery.v1.Subscribe
-	5,  // 1: girvi.delivery.v1.FromExtension.ready:type_name -> girvi.delivery.v1.Ready
-	6,  // 2: girvi.delivery.v1.FromExtension.ack:type_name -> girvi.delivery.v1.Ack
-	7,  // 3: girvi.delivery.v1.FromExtension.status:type_name -> girvi.delivery.v1.StatusUpdate
+	4,  // 0: girvi.delivery.v1.FromPlugin.subscribe:type_name -> girvi.delivery.v1.Subscribe
+	5,  // 1: girvi.delivery.v1.FromPlugin.ready:type_name -> girvi.delivery.v1.Ready
+	6,  // 2: girvi.delivery.v1.FromPlugin.ack:type_name -> girvi.delivery.v1.Ack
+	7,  // 3: girvi.delivery.v1.FromPlugin.status:type_name -> girvi.delivery.v1.StatusUpdate
 	11, // 4: girvi.delivery.v1.Subscribe.capabilities:type_name -> girvi.core.v1.Capability
 	0,  // 5: girvi.delivery.v1.Ack.result:type_name -> girvi.delivery.v1.AckResult
 	1,  // 6: girvi.delivery.v1.Ack.error_class:type_name -> girvi.delivery.v1.ErrorClass
@@ -1014,7 +1015,7 @@ var file_girvi_delivery_v1_delivery_proto_depIdxs = []int32{
 	15, // 16: girvi.delivery.v1.Item.loan_redeemed:type_name -> girvi.events.v1.LoanRedeemed
 	16, // 17: girvi.delivery.v1.Item.notify:type_name -> girvi.notify.v1.Message
 	8,  // 18: girvi.delivery.v1.Consumer.Consume:input_type -> girvi.delivery.v1.FromHost
-	3,  // 19: girvi.delivery.v1.Consumer.Consume:output_type -> girvi.delivery.v1.FromExtension
+	3,  // 19: girvi.delivery.v1.Consumer.Consume:output_type -> girvi.delivery.v1.FromPlugin
 	19, // [19:20] is the sub-list for method output_type
 	18, // [18:19] is the sub-list for method input_type
 	18, // [18:18] is the sub-list for extension type_name
@@ -1028,10 +1029,10 @@ func file_girvi_delivery_v1_delivery_proto_init() {
 		return
 	}
 	file_girvi_delivery_v1_delivery_proto_msgTypes[0].OneofWrappers = []any{
-		(*FromExtension_Subscribe)(nil),
-		(*FromExtension_Ready)(nil),
-		(*FromExtension_Ack)(nil),
-		(*FromExtension_Status)(nil),
+		(*FromPlugin_Subscribe)(nil),
+		(*FromPlugin_Ready)(nil),
+		(*FromPlugin_Ack)(nil),
+		(*FromPlugin_Status)(nil),
 	}
 	file_girvi_delivery_v1_delivery_proto_msgTypes[5].OneofWrappers = []any{
 		(*FromHost_Item)(nil),

@@ -17,25 +17,25 @@ import (
 	deliveryv1 "github.com/anant-barlota/girvi-plugins/sdk/gen/girvi/delivery/v1"
 )
 
-// fakeExt records calls and lets a test script what Handle returns.
-type fakeExt struct {
+// fakePlugin records calls and lets a test script what Handle returns.
+type fakePlugin struct {
 	mu     sync.Mutex
 	calls  map[string]int
 	handle func(ctx context.Context, item *deliveryv1.Item, call int) (Result, error)
 }
 
-func (f *fakeExt) Info() Info {
+func (f *fakePlugin) Info() Info {
 	return Info{
 		ID:           "test/fake",
 		Version:      "0.0.1",
 		Capabilities: []*corev1.Capability{{Name: "notify", Version: 1}},
 	}
 }
-func (f *fakeExt) Configure(context.Context, Config) error { return nil }
-func (f *fakeExt) Health(context.Context) Health {
+func (f *fakePlugin) Configure(context.Context, Config) error { return nil }
+func (f *fakePlugin) Health(context.Context) Health {
 	return Health{Status: corev1.HealthStatus_HEALTH_STATUS_OK}
 }
-func (f *fakeExt) Handle(ctx context.Context, item *deliveryv1.Item) (Result, error) {
+func (f *fakePlugin) Handle(ctx context.Context, item *deliveryv1.Item) (Result, error) {
 	f.mu.Lock()
 	if f.calls == nil {
 		f.calls = map[string]int{}
@@ -49,7 +49,7 @@ func (f *fakeExt) Handle(ctx context.Context, item *deliveryv1.Item) (Result, er
 	}
 	return h(ctx, item, n)
 }
-func (f *fakeExt) callCount(id string) int {
+func (f *fakePlugin) callCount(id string) int {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	return f.calls[id]
@@ -59,17 +59,17 @@ type harness struct {
 	t      *testing.T
 	rt     *Runtime
 	conn   *grpc.ClientConn
-	core   corev1.ExtensionClient
+	core   corev1.PluginClient
 	client deliveryv1.ConsumerClient
 	srv    *grpc.Server
 }
 
-func newHarness(t *testing.T, ext Extension, dir string, opts Options) *harness {
+func newHarness(t *testing.T, plug Plugin, dir string, opts Options) *harness {
 	t.Helper()
-	rt := NewRuntime(ext, opts)
+	rt := NewRuntime(plug, opts)
 	lis := bufconn.Listen(1 << 20)
 	srv := grpc.NewServer()
-	corev1.RegisterExtensionServer(srv, rt)
+	corev1.RegisterPluginServer(srv, rt)
 	deliveryv1.RegisterConsumerServer(srv, rt)
 	go func() { _ = srv.Serve(lis) }()
 
@@ -79,7 +79,7 @@ func newHarness(t *testing.T, ext Extension, dir string, opts Options) *harness 
 	if err != nil {
 		t.Fatalf("dial: %v", err)
 	}
-	h := &harness{t: t, rt: rt, conn: conn, core: corev1.NewExtensionClient(conn), client: deliveryv1.NewConsumerClient(conn), srv: srv}
+	h := &harness{t: t, rt: rt, conn: conn, core: corev1.NewPluginClient(conn), client: deliveryv1.NewConsumerClient(conn), srv: srv}
 	t.Cleanup(func() {
 		_ = conn.Close()
 		srv.Stop()
@@ -95,7 +95,7 @@ func newHarness(t *testing.T, ext Extension, dir string, opts Options) *harness 
 type stream struct {
 	t      *testing.T
 	send   func(*deliveryv1.FromHost) error
-	msgs   chan *deliveryv1.FromExtension
+	msgs   chan *deliveryv1.FromPlugin
 	cancel context.CancelFunc
 }
 
@@ -106,7 +106,7 @@ func (h *harness) open() *stream {
 	if err != nil {
 		h.t.Fatalf("consume: %v", err)
 	}
-	s := &stream{t: h.t, send: cs.Send, msgs: make(chan *deliveryv1.FromExtension, 64), cancel: cancel}
+	s := &stream{t: h.t, send: cs.Send, msgs: make(chan *deliveryv1.FromPlugin, 64), cancel: cancel}
 	go func() {
 		for {
 			m, err := cs.Recv()
@@ -120,7 +120,7 @@ func (h *harness) open() *stream {
 	return s
 }
 
-func (s *stream) next() *deliveryv1.FromExtension {
+func (s *stream) next() *deliveryv1.FromPlugin {
 	s.t.Helper()
 	select {
 	case m, ok := <-s.msgs:
@@ -179,8 +179,8 @@ func fastOpts() Options {
 }
 
 func TestAcceptsThenDeliversAndReports(t *testing.T) {
-	ext := &fakeExt{}
-	h := newHarness(t, ext, t.TempDir(), fastOpts())
+	plug := &fakePlugin{}
+	h := newHarness(t, plug, t.TempDir(), fastOpts())
 	s := h.open()
 	s.expectHello()
 
@@ -196,8 +196,8 @@ func TestAcceptsThenDeliversAndReports(t *testing.T) {
 }
 
 func TestReOfferedItemIsAcknowledgedButNotHandledTwice(t *testing.T) {
-	ext := &fakeExt{}
-	h := newHarness(t, ext, t.TempDir(), fastOpts())
+	plug := &fakePlugin{}
+	h := newHarness(t, plug, t.TempDir(), fastOpts())
 	s := h.open()
 	s.expectHello()
 
@@ -213,19 +213,19 @@ func TestReOfferedItemIsAcknowledgedButNotHandledTwice(t *testing.T) {
 		}
 	}
 	time.Sleep(100 * time.Millisecond)
-	if n := ext.callCount("d1"); n != 1 {
+	if n := plug.callCount("d1"); n != 1 {
 		t.Errorf("Handle called %d times; want 1", n)
 	}
 }
 
 func TestTransientFailureIsRetriedUntilItWorks(t *testing.T) {
-	ext := &fakeExt{handle: func(_ context.Context, _ *deliveryv1.Item, call int) (Result, error) {
+	plug := &fakePlugin{handle: func(_ context.Context, _ *deliveryv1.Item, call int) (Result, error) {
 		if call < 3 {
 			return Result{}, errors.New("provider unavailable")
 		}
 		return Result{ProviderRef: "ok-after-retries"}, nil
 	}}
-	h := newHarness(t, ext, t.TempDir(), fastOpts())
+	h := newHarness(t, plug, t.TempDir(), fastOpts())
 	s := h.open()
 	s.expectHello()
 
@@ -234,16 +234,16 @@ func TestTransientFailureIsRetriedUntilItWorks(t *testing.T) {
 	if got[1].GetProviderRef() != "ok-after-retries" {
 		t.Errorf("provider ref = %q", got[1].GetProviderRef())
 	}
-	if n := ext.callCount("d1"); n != 3 {
+	if n := plug.callCount("d1"); n != 3 {
 		t.Errorf("Handle called %d times; want 3", n)
 	}
 }
 
 func TestPermanentErrorIsNotRetried(t *testing.T) {
-	ext := &fakeExt{handle: func(context.Context, *deliveryv1.Item, int) (Result, error) {
+	plug := &fakePlugin{handle: func(context.Context, *deliveryv1.Item, int) (Result, error) {
 		return Result{}, Permanent(deliveryv1.ErrorClass_ERROR_CLASS_INVALID_INPUT, "recipient is not a valid number")
 	}}
-	h := newHarness(t, ext, t.TempDir(), fastOpts())
+	h := newHarness(t, plug, t.TempDir(), fastOpts())
 	s := h.open()
 	s.expectHello()
 
@@ -253,27 +253,27 @@ func TestPermanentErrorIsNotRetried(t *testing.T) {
 		t.Errorf("error class = %v", got[0].GetErrorClass())
 	}
 	time.Sleep(100 * time.Millisecond)
-	if n := ext.callCount("d1"); n != 1 {
+	if n := plug.callCount("d1"); n != 1 {
 		t.Errorf("Handle called %d times; want 1", n)
 	}
 }
 
 func TestExpiredItemIsDroppedWithoutHandling(t *testing.T) {
-	ext := &fakeExt{}
-	h := newHarness(t, ext, t.TempDir(), fastOpts())
+	plug := &fakePlugin{}
+	h := newHarness(t, plug, t.TempDir(), fastOpts())
 	s := h.open()
 	s.expectHello()
 
 	s.offer("d1", time.Now().Add(-time.Minute))
 	s.statuses("d1", deliveryv1.DeliveryState_DELIVERY_STATE_EXPIRED)
-	if n := ext.callCount("d1"); n != 0 {
+	if n := plug.callCount("d1"); n != 0 {
 		t.Errorf("Handle called %d times for an expired item; want 0", n)
 	}
 }
 
 func TestStatusUpdatesWaitForTheNextStream(t *testing.T) {
 	release := make(chan struct{})
-	ext := &fakeExt{handle: func(ctx context.Context, _ *deliveryv1.Item, _ int) (Result, error) {
+	plug := &fakePlugin{handle: func(ctx context.Context, _ *deliveryv1.Item, _ int) (Result, error) {
 		select {
 		case <-release:
 			return Result{ProviderRef: "late"}, nil
@@ -281,7 +281,7 @@ func TestStatusUpdatesWaitForTheNextStream(t *testing.T) {
 			return Result{}, ctx.Err()
 		}
 	}}
-	h := newHarness(t, ext, t.TempDir(), fastOpts())
+	h := newHarness(t, plug, t.TempDir(), fastOpts())
 	s := h.open()
 	s.expectHello()
 	s.offer("d1", time.Now().Add(time.Hour))
@@ -289,7 +289,7 @@ func TestStatusUpdatesWaitForTheNextStream(t *testing.T) {
 		t.Fatal("want an ack")
 	}
 
-	// The stream drops while the extension is still working.
+	// The stream drops while the plugin is still working.
 	s.cancel()
 	time.Sleep(50 * time.Millisecond)
 	close(release)
@@ -309,12 +309,12 @@ func TestAcceptedItemsSurviveARestart(t *testing.T) {
 
 	// First run: the item is accepted, then the process stops mid-call.
 	started := make(chan struct{})
-	ext1 := &fakeExt{handle: func(ctx context.Context, _ *deliveryv1.Item, _ int) (Result, error) {
+	plug1 := &fakePlugin{handle: func(ctx context.Context, _ *deliveryv1.Item, _ int) (Result, error) {
 		close(started)
 		<-ctx.Done()
 		return Result{}, ctx.Err()
 	}}
-	h1 := newHarness(t, ext1, dir, fastOpts())
+	h1 := newHarness(t, plug1, dir, fastOpts())
 	s := h1.open()
 	s.expectHello()
 	s.offer("d1", time.Now().Add(time.Hour))
@@ -325,18 +325,18 @@ func TestAcceptedItemsSurviveARestart(t *testing.T) {
 	h1.rt.Close()
 
 	// Second run on the same directory picks it up and finishes it.
-	ext2 := &fakeExt{}
-	h2 := newHarness(t, ext2, dir, fastOpts())
+	plug2 := &fakePlugin{}
+	h2 := newHarness(t, plug2, dir, fastOpts())
 	s2 := h2.open()
 	s2.expectHello()
 	s2.statuses("d1", deliveryv1.DeliveryState_DELIVERY_STATE_DELIVERED)
-	if n := ext2.callCount("d1"); n != 1 {
+	if n := plug2.callCount("d1"); n != 1 {
 		t.Errorf("Handle called %d times after restart; want 1", n)
 	}
 }
 
 func TestConsumeBeforeInitializeFails(t *testing.T) {
-	rt := NewRuntime(&fakeExt{}, fastOpts())
+	rt := NewRuntime(&fakePlugin{}, fastOpts())
 	lis := bufconn.Listen(1 << 20)
 	srv := grpc.NewServer()
 	deliveryv1.RegisterConsumerServer(srv, rt)
@@ -358,7 +358,7 @@ func TestConsumeBeforeInitializeFails(t *testing.T) {
 
 func TestABlockedItemWaitsAndIsDeliveredOnceTheFixIsIn(t *testing.T) {
 	fixed := make(chan struct{})
-	ext := &fakeExt{handle: func(_ context.Context, _ *deliveryv1.Item, _ int) (Result, error) {
+	plug := &fakePlugin{handle: func(_ context.Context, _ *deliveryv1.Item, _ int) (Result, error) {
 		select {
 		case <-fixed:
 			return Result{ProviderRef: "after-fix"}, nil
@@ -366,7 +366,7 @@ func TestABlockedItemWaitsAndIsDeliveredOnceTheFixIsIn(t *testing.T) {
 			return Result{}, Blocked(deliveryv1.ErrorClass_ERROR_CLASS_CONFIG, "access token rejected")
 		}
 	}}
-	h := newHarness(t, ext, t.TempDir(), fastOpts())
+	h := newHarness(t, plug, t.TempDir(), fastOpts())
 	s := h.open()
 	s.expectHello()
 
@@ -386,10 +386,10 @@ func TestABlockedItemWaitsAndIsDeliveredOnceTheFixIsIn(t *testing.T) {
 }
 
 func TestAnUnconfirmedSendIsReportedAsSentNotDelivered(t *testing.T) {
-	ext := &fakeExt{handle: func(context.Context, *deliveryv1.Item, int) (Result, error) {
+	plug := &fakePlugin{handle: func(context.Context, *deliveryv1.Item, int) (Result, error) {
 		return Result{ProviderRef: "wamid.1", Unconfirmed: true, Note: "Accepted by WhatsApp. Delivery is not confirmed."}, nil
 	}}
-	h := newHarness(t, ext, t.TempDir(), fastOpts())
+	h := newHarness(t, plug, t.TempDir(), fastOpts())
 	s := h.open()
 	s.expectHello()
 
@@ -399,7 +399,7 @@ func TestAnUnconfirmedSendIsReportedAsSentNotDelivered(t *testing.T) {
 		t.Errorf("sent status wrong: %v", got[0])
 	}
 	time.Sleep(100 * time.Millisecond)
-	if n := ext.callCount("d1"); n != 1 {
+	if n := plug.callCount("d1"); n != 1 {
 		t.Errorf("Handle called %d times; an unconfirmed send is still finished, so want 1", n)
 	}
 }

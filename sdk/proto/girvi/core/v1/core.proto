@@ -1,19 +1,19 @@
 syntax = "proto3";
 
-// core.v1: the service every extension implements, whatever else it does.
+// core.v1: the service every plugin implements, whatever else it does.
 // It carries no events and no documents.
 package girvi.core.v1;
 
 option go_package = "github.com/anant-barlota/girvi-plugins/sdk/gen/girvi/core/v1;corev1";
 
-service Extension {
+service Plugin {
   // Negotiate versions and declare capabilities. The host checks the reply
   // against the signed manifest the user approved and refuses a binary that
   // announces anything more.
   rpc Initialize(InitializeRequest) returns (InitializeResponse);
 
-  // Push settings and the firms the extension is enabled for. Called after
-  // Initialize and again on every change. Secrets arrive here; the extension
+  // Push settings and the firms the plugin is enabled for. Called after
+  // Initialize and again on every change. Secrets arrive here; the plugin
   // holds them in memory because it retries later without the host.
   rpc Configure(ConfigureRequest) returns (ConfigureResponse);
 
@@ -37,16 +37,16 @@ message Capability {
 message InitializeRequest {
   string host_version = 1;
   repeated CapabilityVersions host_supports = 2;
-  string data_dir = 3; // the extension's private directory
+  string data_dir = 3; // the plugin's private directory
 }
 
 message InitializeResponse {
-  string extension_id = 1; // must equal the id in the signed manifest
-  string extension_version = 2;
+  string plugin_id = 1; // must equal the id in the signed manifest
+  string plugin_version = 2;
   repeated Capability capabilities = 3;
   repeated string requires = 4; // "network", "storage.private"
   repeated SettingField settings = 5;
-  string name = 6;        // shown in the extensions screen
+  string name = 6;        // shown in the plugins screen
   string author = 7;
   string description = 8;
 }
@@ -93,7 +93,7 @@ enum HealthStatus {
 message FirmHealth {
   string firm_id = 1;
   HealthStatus status = 2;
-  string message = 3; // shown in the extensions screen; no customer data
+  string message = 3; // shown in the plugins screen; no customer data
 }
 
 message HealthRequest {}

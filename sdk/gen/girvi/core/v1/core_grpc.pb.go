@@ -4,7 +4,7 @@
 // - protoc             v3.21.12
 // source: girvi/core/v1/core.proto
 
-// core.v1: the service every extension implements, whatever else it does.
+// core.v1: the service every plugin implements, whatever else it does.
 // It carries no events and no documents.
 
 package corev1
@@ -22,22 +22,22 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Extension_Initialize_FullMethodName = "/girvi.core.v1.Extension/Initialize"
-	Extension_Configure_FullMethodName  = "/girvi.core.v1.Extension/Configure"
-	Extension_Health_FullMethodName     = "/girvi.core.v1.Extension/Health"
-	Extension_Shutdown_FullMethodName   = "/girvi.core.v1.Extension/Shutdown"
+	Plugin_Initialize_FullMethodName = "/girvi.core.v1.Plugin/Initialize"
+	Plugin_Configure_FullMethodName  = "/girvi.core.v1.Plugin/Configure"
+	Plugin_Health_FullMethodName     = "/girvi.core.v1.Plugin/Health"
+	Plugin_Shutdown_FullMethodName   = "/girvi.core.v1.Plugin/Shutdown"
 )
 
-// ExtensionClient is the client API for Extension service.
+// PluginClient is the client API for Plugin service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type ExtensionClient interface {
+type PluginClient interface {
 	// Negotiate versions and declare capabilities. The host checks the reply
 	// against the signed manifest the user approved and refuses a binary that
 	// announces anything more.
 	Initialize(ctx context.Context, in *InitializeRequest, opts ...grpc.CallOption) (*InitializeResponse, error)
-	// Push settings and the firms the extension is enabled for. Called after
-	// Initialize and again on every change. Secrets arrive here; the extension
+	// Push settings and the firms the plugin is enabled for. Called after
+	// Initialize and again on every change. Secrets arrive here; the plugin
 	// holds them in memory because it retries later without the host.
 	Configure(ctx context.Context, in *ConfigureRequest, opts ...grpc.CallOption) (*ConfigureResponse, error)
 	Health(ctx context.Context, in *HealthRequest, opts ...grpc.CallOption) (*HealthResponse, error)
@@ -45,206 +45,206 @@ type ExtensionClient interface {
 	Shutdown(ctx context.Context, in *ShutdownRequest, opts ...grpc.CallOption) (*ShutdownResponse, error)
 }
 
-type extensionClient struct {
+type pluginClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewExtensionClient(cc grpc.ClientConnInterface) ExtensionClient {
-	return &extensionClient{cc}
+func NewPluginClient(cc grpc.ClientConnInterface) PluginClient {
+	return &pluginClient{cc}
 }
 
-func (c *extensionClient) Initialize(ctx context.Context, in *InitializeRequest, opts ...grpc.CallOption) (*InitializeResponse, error) {
+func (c *pluginClient) Initialize(ctx context.Context, in *InitializeRequest, opts ...grpc.CallOption) (*InitializeResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(InitializeResponse)
-	err := c.cc.Invoke(ctx, Extension_Initialize_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, Plugin_Initialize_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *extensionClient) Configure(ctx context.Context, in *ConfigureRequest, opts ...grpc.CallOption) (*ConfigureResponse, error) {
+func (c *pluginClient) Configure(ctx context.Context, in *ConfigureRequest, opts ...grpc.CallOption) (*ConfigureResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ConfigureResponse)
-	err := c.cc.Invoke(ctx, Extension_Configure_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, Plugin_Configure_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *extensionClient) Health(ctx context.Context, in *HealthRequest, opts ...grpc.CallOption) (*HealthResponse, error) {
+func (c *pluginClient) Health(ctx context.Context, in *HealthRequest, opts ...grpc.CallOption) (*HealthResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(HealthResponse)
-	err := c.cc.Invoke(ctx, Extension_Health_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, Plugin_Health_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *extensionClient) Shutdown(ctx context.Context, in *ShutdownRequest, opts ...grpc.CallOption) (*ShutdownResponse, error) {
+func (c *pluginClient) Shutdown(ctx context.Context, in *ShutdownRequest, opts ...grpc.CallOption) (*ShutdownResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ShutdownResponse)
-	err := c.cc.Invoke(ctx, Extension_Shutdown_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, Plugin_Shutdown_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// ExtensionServer is the server API for Extension service.
-// All implementations must embed UnimplementedExtensionServer
+// PluginServer is the server API for Plugin service.
+// All implementations must embed UnimplementedPluginServer
 // for forward compatibility.
-type ExtensionServer interface {
+type PluginServer interface {
 	// Negotiate versions and declare capabilities. The host checks the reply
 	// against the signed manifest the user approved and refuses a binary that
 	// announces anything more.
 	Initialize(context.Context, *InitializeRequest) (*InitializeResponse, error)
-	// Push settings and the firms the extension is enabled for. Called after
-	// Initialize and again on every change. Secrets arrive here; the extension
+	// Push settings and the firms the plugin is enabled for. Called after
+	// Initialize and again on every change. Secrets arrive here; the plugin
 	// holds them in memory because it retries later without the host.
 	Configure(context.Context, *ConfigureRequest) (*ConfigureResponse, error)
 	Health(context.Context, *HealthRequest) (*HealthResponse, error)
 	// Drain and exit. The host waits a grace period, then kills the process.
 	Shutdown(context.Context, *ShutdownRequest) (*ShutdownResponse, error)
-	mustEmbedUnimplementedExtensionServer()
+	mustEmbedUnimplementedPluginServer()
 }
 
-// UnimplementedExtensionServer must be embedded to have
+// UnimplementedPluginServer must be embedded to have
 // forward compatible implementations.
 //
 // NOTE: this should be embedded by value instead of pointer to avoid a nil
 // pointer dereference when methods are called.
-type UnimplementedExtensionServer struct{}
+type UnimplementedPluginServer struct{}
 
-func (UnimplementedExtensionServer) Initialize(context.Context, *InitializeRequest) (*InitializeResponse, error) {
+func (UnimplementedPluginServer) Initialize(context.Context, *InitializeRequest) (*InitializeResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Initialize not implemented")
 }
-func (UnimplementedExtensionServer) Configure(context.Context, *ConfigureRequest) (*ConfigureResponse, error) {
+func (UnimplementedPluginServer) Configure(context.Context, *ConfigureRequest) (*ConfigureResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Configure not implemented")
 }
-func (UnimplementedExtensionServer) Health(context.Context, *HealthRequest) (*HealthResponse, error) {
+func (UnimplementedPluginServer) Health(context.Context, *HealthRequest) (*HealthResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Health not implemented")
 }
-func (UnimplementedExtensionServer) Shutdown(context.Context, *ShutdownRequest) (*ShutdownResponse, error) {
+func (UnimplementedPluginServer) Shutdown(context.Context, *ShutdownRequest) (*ShutdownResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Shutdown not implemented")
 }
-func (UnimplementedExtensionServer) mustEmbedUnimplementedExtensionServer() {}
-func (UnimplementedExtensionServer) testEmbeddedByValue()                   {}
+func (UnimplementedPluginServer) mustEmbedUnimplementedPluginServer() {}
+func (UnimplementedPluginServer) testEmbeddedByValue()                {}
 
-// UnsafeExtensionServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to ExtensionServer will
+// UnsafePluginServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to PluginServer will
 // result in compilation errors.
-type UnsafeExtensionServer interface {
-	mustEmbedUnimplementedExtensionServer()
+type UnsafePluginServer interface {
+	mustEmbedUnimplementedPluginServer()
 }
 
-func RegisterExtensionServer(s grpc.ServiceRegistrar, srv ExtensionServer) {
-	// If the following call pancis, it indicates UnimplementedExtensionServer was
+func RegisterPluginServer(s grpc.ServiceRegistrar, srv PluginServer) {
+	// If the following call pancis, it indicates UnimplementedPluginServer was
 	// embedded by pointer and is nil.  This will cause panics if an
 	// unimplemented method is ever invoked, so we test this at initialization
 	// time to prevent it from happening at runtime later due to I/O.
 	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
 		t.testEmbeddedByValue()
 	}
-	s.RegisterService(&Extension_ServiceDesc, srv)
+	s.RegisterService(&Plugin_ServiceDesc, srv)
 }
 
-func _Extension_Initialize_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Plugin_Initialize_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(InitializeRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ExtensionServer).Initialize(ctx, in)
+		return srv.(PluginServer).Initialize(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Extension_Initialize_FullMethodName,
+		FullMethod: Plugin_Initialize_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ExtensionServer).Initialize(ctx, req.(*InitializeRequest))
+		return srv.(PluginServer).Initialize(ctx, req.(*InitializeRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Extension_Configure_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Plugin_Configure_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ConfigureRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ExtensionServer).Configure(ctx, in)
+		return srv.(PluginServer).Configure(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Extension_Configure_FullMethodName,
+		FullMethod: Plugin_Configure_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ExtensionServer).Configure(ctx, req.(*ConfigureRequest))
+		return srv.(PluginServer).Configure(ctx, req.(*ConfigureRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Extension_Health_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Plugin_Health_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(HealthRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ExtensionServer).Health(ctx, in)
+		return srv.(PluginServer).Health(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Extension_Health_FullMethodName,
+		FullMethod: Plugin_Health_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ExtensionServer).Health(ctx, req.(*HealthRequest))
+		return srv.(PluginServer).Health(ctx, req.(*HealthRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Extension_Shutdown_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Plugin_Shutdown_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ShutdownRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ExtensionServer).Shutdown(ctx, in)
+		return srv.(PluginServer).Shutdown(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Extension_Shutdown_FullMethodName,
+		FullMethod: Plugin_Shutdown_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ExtensionServer).Shutdown(ctx, req.(*ShutdownRequest))
+		return srv.(PluginServer).Shutdown(ctx, req.(*ShutdownRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-// Extension_ServiceDesc is the grpc.ServiceDesc for Extension service.
+// Plugin_ServiceDesc is the grpc.ServiceDesc for Plugin service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var Extension_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "girvi.core.v1.Extension",
-	HandlerType: (*ExtensionServer)(nil),
+var Plugin_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "girvi.core.v1.Plugin",
+	HandlerType: (*PluginServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "Initialize",
-			Handler:    _Extension_Initialize_Handler,
+			Handler:    _Plugin_Initialize_Handler,
 		},
 		{
 			MethodName: "Configure",
-			Handler:    _Extension_Configure_Handler,
+			Handler:    _Plugin_Configure_Handler,
 		},
 		{
 			MethodName: "Health",
-			Handler:    _Extension_Health_Handler,
+			Handler:    _Plugin_Health_Handler,
 		},
 		{
 			MethodName: "Shutdown",
-			Handler:    _Extension_Shutdown_Handler,
+			Handler:    _Plugin_Shutdown_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

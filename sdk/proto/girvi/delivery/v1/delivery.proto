@@ -1,11 +1,11 @@
 syntax = "proto3";
 
-// delivery.v1: how events and notify messages reach an extension.
+// delivery.v1: how events and notify messages reach a plugin.
 //
-// The host opens one long-lived bidirectional stream to each running extension
+// The host opens one long-lived bidirectional stream to each running plugin
 // (as the gRPC client).
-// The extension pulls work with Ready and answers each item with an Ack. The
-// host stops at handoff: after ACCEPTED the extension owns retries, rate limits
+// The plugin pulls work with Ready and answers each item with an Ack. The
+// host stops at handoff: after ACCEPTED the plugin owns retries, rate limits
 // and staleness, and reports final states with StatusUpdate.
 package girvi.delivery.v1;
 
@@ -17,14 +17,14 @@ import "girvi/notify/v1/notify.proto";
 option go_package = "github.com/anant-barlota/girvi-plugins/sdk/gen/girvi/delivery/v1;deliveryv1";
 
 service Consumer {
-  // The host is the gRPC client and the extension is the server, so the request
+  // The host is the gRPC client and the plugin is the server, so the request
   // stream carries what the host sends (FromHost) and the response stream what
-  // the extension sends (FromExtension). The extension sends first: Subscribe,
+  // the plugin sends (FromPlugin). The plugin sends first: Subscribe,
   // then Ready.
-  rpc Consume(stream FromHost) returns (stream FromExtension);
+  rpc Consume(stream FromHost) returns (stream FromPlugin);
 }
 
-message FromExtension {
+message FromPlugin {
   oneof msg {
     Subscribe subscribe = 1; // must be the first message
     Ready ready = 2;
@@ -34,7 +34,7 @@ message FromExtension {
 }
 
 // The capabilities to receive. The host validates them against the approved
-// manifest and the firms the extension is enabled for.
+// manifest and the firms the plugin is enabled for.
 message Subscribe {
   repeated girvi.core.v1.Capability capabilities = 1;
 }
@@ -46,7 +46,7 @@ message Ready {
 
 enum AckResult {
   ACK_RESULT_UNSPECIFIED = 0;
-  ACK_RESULT_ACCEPTED = 1;  // persisted; the extension now owns it
+  ACK_RESULT_ACCEPTED = 1;  // persisted; the plugin now owns it
   ACK_RESULT_DELIVERED = 2; // finished synchronously
   ACK_RESULT_REJECTED = 3;  // permanent failure
 }
@@ -107,7 +107,7 @@ message Item {
   uint32 capability_version = 3;
   string firm_id = 4;
   google.protobuf.Timestamp occurred_at = 5;
-  google.protobuf.Timestamp expires_at = 6; // after this the extension drops it
+  google.protobuf.Timestamp expires_at = 6; // after this the plugin drops it
   uint32 attempt = 7;                       // offers so far, starting at 1
 
   oneof payload {

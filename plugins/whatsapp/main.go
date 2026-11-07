@@ -1,4 +1,4 @@
-// Command whatsapp is the official WhatsApp Cloud API extension for Girvi. It
+// Command whatsapp is the official WhatsApp Cloud API plugin for Girvi. It
 // sends the messages the host composes (pledge created, payment received, loan
 // closed) as approved WhatsApp templates, from each firm's own business number.
 package main

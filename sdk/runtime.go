@@ -22,13 +22,13 @@ import (
 
 const defaultHandoffExpiry = 24 * time.Hour
 
-// Runtime implements core.v1 and delivery.v1 on top of an Extension. Run wires
+// Runtime implements core.v1 and delivery.v1 on top of a Plugin. Run wires
 // it into go-plugin. It is exported so tests and hosts can drive it directly.
 type Runtime struct {
-	corev1.UnimplementedExtensionServer
+	corev1.UnimplementedPluginServer
 	deliveryv1.UnimplementedConsumerServer
 
-	ext  Extension
+	plug Plugin
 	opts Options
 	now  func() time.Time
 
@@ -41,17 +41,17 @@ type Runtime struct {
 	lastGC time.Time
 }
 
-// NewRuntime builds a runtime for ext.
-func NewRuntime(ext Extension, opts Options) *Runtime {
-	return &Runtime{ext: ext, opts: opts.withDefaults(), now: time.Now, wake: make(chan struct{}, 1)}
+// NewRuntime builds a runtime for plug.
+func NewRuntime(plug Plugin, opts Options) *Runtime {
+	return &Runtime{plug: plug, opts: opts.withDefaults(), now: time.Now, wake: make(chan struct{}, 1)}
 }
 
 type session struct {
-	srv grpc.BidiStreamingServer[deliveryv1.FromHost, deliveryv1.FromExtension]
+	srv grpc.BidiStreamingServer[deliveryv1.FromHost, deliveryv1.FromPlugin]
 	mu  sync.Mutex
 }
 
-func (s *session) send(m *deliveryv1.FromExtension) error {
+func (s *session) send(m *deliveryv1.FromPlugin) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.srv.Send(m)
@@ -62,7 +62,7 @@ func (s *session) send(m *deliveryv1.FromExtension) error {
 func (r *Runtime) Initialize(ctx context.Context, req *corev1.InitializeRequest) (*corev1.InitializeResponse, error) {
 	dir := req.GetDataDir()
 	if dir == "" {
-		dir = filepath.Join(os.TempDir(), "girvi-extension")
+		dir = filepath.Join(os.TempDir(), "girvi-plugin")
 	}
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return nil, status.Errorf(codes.Internal, "create data dir: %v", err)
@@ -82,16 +82,16 @@ func (r *Runtime) Initialize(ctx context.Context, req *corev1.InitializeRequest)
 		go r.work(workCtx, r.done)
 	}
 
-	info := r.ext.Info()
+	info := r.plug.Info()
 	return &corev1.InitializeResponse{
-		ExtensionId:      info.ID,
-		ExtensionVersion: info.Version,
-		Name:             info.Name,
-		Author:           info.Author,
-		Description:      info.Description,
-		Capabilities:     info.Capabilities,
-		Requires:         info.Requires,
-		Settings:         info.Settings,
+		PluginId:      info.ID,
+		PluginVersion: info.Version,
+		Name:          info.Name,
+		Author:        info.Author,
+		Description:   info.Description,
+		Capabilities:  info.Capabilities,
+		Requires:      info.Requires,
+		Settings:      info.Settings,
 	}, nil
 }
 
@@ -100,7 +100,7 @@ func (r *Runtime) Configure(ctx context.Context, req *corev1.ConfigureRequest) (
 	for id, f := range req.GetFirms() {
 		cfg.Firms[id] = FirmConfig{Name: f.GetName(), Enabled: f.GetEnabled(), Values: f.GetValues()}
 	}
-	if err := r.ext.Configure(ctx, cfg); err != nil {
+	if err := r.plug.Configure(ctx, cfg); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	r.poke()
@@ -108,7 +108,7 @@ func (r *Runtime) Configure(ctx context.Context, req *corev1.ConfigureRequest) (
 }
 
 func (r *Runtime) Health(ctx context.Context, _ *corev1.HealthRequest) (*corev1.HealthResponse, error) {
-	h := r.ext.Health(ctx)
+	h := r.plug.Health(ctx)
 	return &corev1.HealthResponse{Status: h.Status, Message: h.Message, Firms: h.Firms}, nil
 }
 
@@ -140,17 +140,17 @@ func (r *Runtime) queue() *queue.Queue {
 	return r.q
 }
 
-func (r *Runtime) Consume(srv grpc.BidiStreamingServer[deliveryv1.FromHost, deliveryv1.FromExtension]) error {
+func (r *Runtime) Consume(srv grpc.BidiStreamingServer[deliveryv1.FromHost, deliveryv1.FromPlugin]) error {
 	if r.queue() == nil {
 		return status.Error(codes.FailedPrecondition, "Initialize must be called before Consume")
 	}
 	sess := &session{srv: srv}
-	if err := sess.send(&deliveryv1.FromExtension{Msg: &deliveryv1.FromExtension_Subscribe{
-		Subscribe: &deliveryv1.Subscribe{Capabilities: r.ext.Info().Capabilities},
+	if err := sess.send(&deliveryv1.FromPlugin{Msg: &deliveryv1.FromPlugin_Subscribe{
+		Subscribe: &deliveryv1.Subscribe{Capabilities: r.plug.Info().Capabilities},
 	}}); err != nil {
 		return err
 	}
-	if err := sess.send(&deliveryv1.FromExtension{Msg: &deliveryv1.FromExtension_Ready{
+	if err := sess.send(&deliveryv1.FromPlugin{Msg: &deliveryv1.FromPlugin_Ready{
 		Ready: &deliveryv1.Ready{N: r.opts.Window},
 	}}); err != nil {
 		return err
@@ -188,12 +188,12 @@ func (r *Runtime) Consume(srv grpc.BidiStreamingServer[deliveryv1.FromHost, deli
 }
 
 // accept persists an item and then acknowledges it. The ack is what hands
-// custody to the extension, so persisting must come first. A delivery id seen
+// custody to the plugin, so persisting must come first. A delivery id seen
 // before is acknowledged again without queuing a second copy.
 func (r *Runtime) accept(sess *session, item *deliveryv1.Item) error {
 	q := r.queue()
 	if q == nil {
-		return status.Error(codes.Unavailable, "extension is shutting down")
+		return status.Error(codes.Unavailable, "plugin is shutting down")
 	}
 	raw, err := proto.Marshal(item)
 	if err != nil {
@@ -208,13 +208,13 @@ func (r *Runtime) accept(sess *session, item *deliveryv1.Item) error {
 		// Not persisted, so not acknowledged: the host offers it again.
 		return status.Errorf(codes.Internal, "persist item: %v", err)
 	}
-	if err := sess.send(&deliveryv1.FromExtension{Msg: &deliveryv1.FromExtension_Ack{Ack: &deliveryv1.Ack{
+	if err := sess.send(&deliveryv1.FromPlugin{Msg: &deliveryv1.FromPlugin_Ack{Ack: &deliveryv1.Ack{
 		DeliveryId: item.GetDeliveryId(),
 		Result:     deliveryv1.AckResult_ACK_RESULT_ACCEPTED,
 	}}}); err != nil {
 		return err
 	}
-	if err := sess.send(&deliveryv1.FromExtension{Msg: &deliveryv1.FromExtension_Ready{
+	if err := sess.send(&deliveryv1.FromPlugin{Msg: &deliveryv1.FromPlugin_Ready{
 		Ready: &deliveryv1.Ready{N: 1},
 	}}); err != nil {
 		return err
@@ -311,7 +311,7 @@ func (r *Runtime) process(ctx context.Context, q *queue.Queue, row queue.Row) {
 	item.Attempt = uint32(row.Attempts + 1)
 
 	hctx, cancel := context.WithTimeout(ctx, r.opts.HandleTimeout)
-	res, err := r.ext.Handle(hctx, item)
+	res, err := r.plug.Handle(hctx, item)
 	cancel()
 
 	now = r.now()
@@ -378,7 +378,7 @@ func (r *Runtime) flush() {
 			return
 		}
 		for _, u := range updates {
-			err := sess.send(&deliveryv1.FromExtension{Msg: &deliveryv1.FromExtension_Status{Status: &deliveryv1.StatusUpdate{
+			err := sess.send(&deliveryv1.FromPlugin{Msg: &deliveryv1.FromPlugin_Status{Status: &deliveryv1.StatusUpdate{
 				DeliveryId:  u.DeliveryID,
 				State:       deliveryv1.DeliveryState(u.State),
 				ErrorClass:  deliveryv1.ErrorClass(u.ErrorClass),

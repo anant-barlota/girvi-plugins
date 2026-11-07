@@ -263,7 +263,7 @@ func waitForSetup(t *testing.T, w *whatsApp, firmID string) {
 	t.Fatal("template setup did not finish")
 }
 
-func TestConfiguringTheExtensionSetsUpTemplatesInTheBackground(t *testing.T) {
+func TestConfiguringThePluginSetsUpTemplatesInTheBackground(t *testing.T) {
 	f := newFakeMeta(t)
 	w := newWhatsApp()
 	err := w.Configure(context.Background(), sdk.Config{

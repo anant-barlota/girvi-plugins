@@ -1,0 +1,19 @@
+# Publishes the WhatsApp plugin when a tag like whatsapp/v0.2.0 is pushed. SDK
+# versions are tagged v0.1.0-alpha.N and are unrelated to this.
+name: Release the WhatsApp plugin
+
+on:
+  push:
+    tags: ['whatsapp/v*']
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    permissions:
+      contents: write
+    uses: ./.github/workflows/release-plugin.yml
+    with:
+      name: whatsapp
+      package: ./plugins/whatsapp

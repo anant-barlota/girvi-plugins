@@ -7,7 +7,7 @@
 #       tags: ['v*']
 #   jobs:
 #     release:
-#       uses: anant-barlota/girvi-plugins/.github/workflows/release-plugin.yml@v0.1.0-alpha.8
+#       uses: anant-barlota/girvi-plugins/.github/workflows/release-plugin.yml@a8419c6dd09b215a06b214674c855cf1136758a0 # v0.1.0-alpha.8
 #       with:
 #         name: webhook
 #
@@ -50,8 +50,8 @@ jobs:
           - { goos: darwin, goarch: arm64 }
           - { goos: windows, goarch: amd64 }
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
           go-version-file: go.mod
       - name: Build
@@ -70,7 +70,7 @@ jobs:
           if [ "$GOOS" = "windows" ]; then ext=".exe"; fi
           mkdir -p dist
           go build -trimpath -ldflags "-s -w" -o "dist/girvi-plugin-${NAME}_${version}_${GOOS}_${GOARCH}${ext}" "$PACKAGE"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: dist-${{ matrix.goos }}-${{ matrix.goarch }}
           path: dist/*
@@ -82,7 +82,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           pattern: dist-*
           merge-multiple: true

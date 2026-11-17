@@ -1,7 +1,7 @@
-# Girvi plugins
+# Girvi SDK
 
-Everything needed to write a plugin for [Girvi](https://girvi.app), a pawn-shop app: the contract, a Go SDK, a
-command-line tool that makes, builds and tests plugins, and an MCP server so an AI assistant can do the same.
+Everything needed to write a plugin for [Girvi](https://girvi.app), a pawn-shop app: the contract, a Go SDK, the
+`girvi` command, which makes, builds and tests plugins, and an MCP server so an AI assistant can do the same.
 
 A plugin is a small add-on that acts when a loan or payment is saved: posts it to a webhook, texts the customer,
 exports it to accounting. It is a WebAssembly module that Girvi runs in a sandbox, so it cannot read files or
@@ -9,21 +9,22 @@ Girvi's records, and can reach only the hosts its manifest names. Shops install 
 may do, approve it, and turn it on per firm.
 
 > **Status:** `girvi/v1` is new and not yet frozen. It is at pre-release tags `v0.2.0-alpha.*` and may still change
-> between them. The older process-based SDK is at tags `v0.1.0-alpha.*`.
+> between them. This repository was `girvi-plugins` until `v0.2.0-alpha.6`; earlier tags, including the older
+> process-based SDK at `v0.1.0-alpha.*`, are under the module path `github.com/anant-barlota/girvi-plugins`.
 
 ## Contents
 
 | Path | What it is |
 |---|---|
-| [`contract/CONTRACT.md`](contract/CONTRACT.md) | The `girvi/v1` contract: manifest, exports, host functions, outcomes, limits, events. Start here. |
-| [`contract`](contract) | The same as Go: limits, the host module, samples, and what a plugin is given of an event. Girvi imports it. |
-| [`contract/plugin.schema.json`](contract/plugin.schema.json) | JSON schema of `plugin.json`, for editor completion. |
-| [`contract/fixtures`](contract/fixtures) | A sample of every event, as Girvi sends it. |
-| [`sdk`](sdk) | The Go SDK. Handlers are ordinary functions; `sdk/sdktest` is a fake host for `go test`. |
+| [`plugin/contract/CONTRACT.md`](plugin/contract/CONTRACT.md) | The `girvi/v1` contract: manifest, exports, host functions, outcomes, limits, events. Start here. |
+| [`plugin`](plugin) | The Go SDK. Handlers are ordinary functions; `plugin/plugintest` is a fake host for `go test`. |
+| [`plugin/contract`](plugin/contract) | The contract as Go: limits, the host module, samples, and what a plugin is given of an event. Girvi imports it. |
+| [`plugin/contract/plugin.schema.json`](plugin/contract/plugin.schema.json) | JSON schema of `plugin.json`, for editor completion. |
+| [`plugin/contract/fixtures`](plugin/contract/fixtures) | A sample of every event, as Girvi sends it. |
+| [`plugin/manifest`](plugin/manifest) | Reads and checks `plugin.json`, bundles and their imports, and which hosts a plugin may reach, with Girvi's own rules. |
+| [`plugin/sandbox`](plugin/sandbox) | Girvi's plugin runtime: host functions, limits, deadline, what counts as an answer. Girvi runs plugins with it. |
+| [`plugin/harness`](plugin/harness) | The same runtime with storage in memory and scripted HTTP, so a test sends nothing. Used by `girvi plugin test`. |
 | [`cmd/girvi`](cmd/girvi) | The `girvi` command: `girvi plugin new`, `validate`, `build`, `test`; `girvi contract`; `girvi version`; and `girvi mcp`, the same as MCP tools for an AI assistant. |
-| [`sandbox`](sandbox) | Girvi's plugin runtime: host functions, limits, deadline, what counts as an answer. Girvi runs plugins with it. |
-| [`harness`](harness) | The same runtime with storage in memory and scripted HTTP, so a test sends nothing. Used by `test`. |
-| [`manifest`](manifest) | Reads and checks `plugin.json`, bundles and their imports, and which hosts a plugin may reach, with Girvi's own rules. |
 | [`examples/webhook`](examples/webhook) | A complete plugin: posts loan events as signed JSON to a URL each firm chooses. |
 
 ## Write a plugin
@@ -31,7 +32,7 @@ may do, approve it, and turn it on per firm.
 You need Go 1.25 or later.
 
 ```sh
-go install github.com/anant-barlota/girvi-plugins/cmd/girvi@<version>
+go install github.com/anant-barlota/girvi-sdk/cmd/girvi@<version>
 
 girvi plugin new ./sms --id your-name/sms
 cd sms
@@ -47,27 +48,27 @@ girvi plugin test                # run it in the sandbox against a sample event
 2. **Edit `handler.go`**:
 
    ```go
-   func handle(h sdk.Host, in sdk.Input) sdk.Outcome {
+   func handle(h plugin.Host, in plugin.Input) plugin.Outcome {
        e, err := in.LoanCreated()
        if err != nil {
-           return sdk.Failed(err.Error())
+           return plugin.Failed(err.Error())
        }
-       resp := h.HTTP(sdk.Request{Method: "POST", URL: in.Settings["url"], Body: body(e)})
+       resp := h.HTTP(plugin.Request{Method: "POST", URL: in.Settings["url"], Body: body(e)})
        switch {
        case resp.Error != "" || resp.Status >= 500:
-           return sdk.Retry(300, "the receiver is unavailable")
+           return plugin.Retry(300, "the receiver is unavailable")
        case resp.Status == 401:
-           return sdk.Blocked("check the token in the settings")
+           return plugin.Blocked("check the token in the settings")
        case resp.Status >= 400:
-           return sdk.Failed(fmt.Sprintf("refused (HTTP %d)", resp.Status))
+           return plugin.Failed(fmt.Sprintf("refused (HTTP %d)", resp.Status))
        }
-       return sdk.OK("")
+       return plugin.OK("")
    }
    ```
 
    The plugin decides every outcome: `ok`, `failed` (never works), `blocked` (a setting needs fixing) or `retry`.
    Girvi records it and does what it says.
-3. **Test the logic** with `go test`, using `sdktest.New()` as the host and `sdktest.Event(t, sdk.EventLoanCreated,
+3. **Test the logic** with `go test`, using `plugintest.New()` as the host and `plugintest.Event(t, plugin.EventLoanCreated,
    settings)` as the input.
 4. **Test the build** with `girvi plugin test`. It runs the real `.wasm` in Girvi's own runtime (package `sandbox`),
    so imports, limits and answers are handled exactly as Girvi does. Storage is in memory, and network requests are
@@ -88,7 +89,7 @@ girvi plugin test                # run it in the sandbox against a sample event
 `build_plugin` and `test_plugin`. Add it to a client, for example Claude Code:
 
 ```sh
-claude mcp add girvi-plugins -- go run github.com/anant-barlota/girvi-plugins/cmd/girvi@<version> mcp
+claude mcp add girvi-sdk -- go run github.com/anant-barlota/girvi-sdk/cmd/girvi@<version> mcp
 ```
 
 Then ask for a plugin in plain words. The assistant reads the contract, makes the plugin, and builds and tests it
@@ -99,7 +100,7 @@ until it passes; tests never send anything over the network.
 Until there is a tagged release, build the command from a checkout and point new plugins at it:
 
 ```sh
-git clone https://github.com/anant-barlota/girvi-plugins && cd girvi-plugins
+git clone https://github.com/anant-barlota/girvi-sdk && cd girvi-sdk
 go build -o ~/bin/ ./cmd/girvi
 girvi plugin new ~/sms --id your-name/sms --sdk "$PWD"
 ```
@@ -122,7 +123,7 @@ on:
     tags: ['v*']
 jobs:
   release:
-    uses: anant-barlota/girvi-plugins/.github/workflows/release-plugin.yml@<commit>
+    uses: anant-barlota/girvi-sdk/.github/workflows/release-plugin.yml@<commit>
 ```
 
 It builds the bundle with the same SDK version your plugin uses and publishes the zip and its SHA-256 as a GitHub

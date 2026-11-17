@@ -9,14 +9,14 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/anant-barlota/girvi-plugins/sdk"
+	"github.com/anant-barlota/girvi-sdk/plugin"
 )
 
 var sink [][]byte
 
 //go:wasmexport on_event
 func onEvent() {
-	sdk.Run(func(h sdk.Host, in sdk.Input) sdk.Outcome {
+	plugin.Run(func(h plugin.Host, in plugin.Input) plugin.Outcome {
 		switch in.Settings["mode"] {
 		case "panic":
 			panic("plugin bug")
@@ -35,23 +35,23 @@ func onEvent() {
 			}
 		case "files":
 			_, err := os.ReadFile("/etc/passwd")
-			return sdk.OK(fmt.Sprintf("read=%v env=%d", err == nil, len(os.Environ())))
+			return plugin.OK(fmt.Sprintf("read=%v env=%d", err == nil, len(os.Environ())))
 		case "store":
 			n := 0
 			for n < 2000 && h.StorageSet("k"+strconv.Itoa(n), []byte("v")) {
 				n++
 			}
 			ok := h.WakeAt(time.Now().Add(time.Hour).Unix(), "later")
-			return sdk.OK(fmt.Sprintf("stored=%d wake=%v", n, ok))
+			return plugin.OK(fmt.Sprintf("stored=%d wake=%v", n, ok))
 		}
 		h.Log("hello")
-		return sdk.OK("fine")
+		return plugin.OK("fine")
 	})
 }
 
 //go:wasmexport on_wake
 func onWake() {
-	sdk.Run(func(h sdk.Host, in sdk.Input) sdk.Outcome { return sdk.OK("woke with " + in.Wake) })
+	plugin.Run(func(h plugin.Host, in plugin.Input) plugin.Outcome { return plugin.OK("woke with " + in.Wake) })
 }
 
 func main() {}

@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/anant-barlota/girvi-plugins/contract"
+	"github.com/anant-barlota/girvi-sdk/plugin/contract"
 	"github.com/tetratelabs/wazero"
 )
 

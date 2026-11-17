@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/anant-barlota/girvi-plugins/harness"
-	"github.com/anant-barlota/girvi-plugins/internal/tool"
-	"github.com/anant-barlota/girvi-plugins/sdk"
+	"github.com/anant-barlota/girvi-sdk/internal/tool"
+	"github.com/anant-barlota/girvi-sdk/plugin"
+	"github.com/anant-barlota/girvi-sdk/plugin/harness"
 )
 
 var (
@@ -42,7 +42,7 @@ func load(t *testing.T) *harness.Plugin {
 func call(t *testing.T, mode string, deadline time.Duration) harness.Result {
 	t.Helper()
 	p := load(t)
-	in, err := p.Input(sdk.EventLoanCreated, sdk.KindEvent, map[string]string{"mode": mode})
+	in, err := p.Input(plugin.EventLoanCreated, plugin.KindEvent, map[string]string{"mode": mode})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -94,7 +94,7 @@ func TestSandboxAndLimits(t *testing.T) {
 
 func TestWake(t *testing.T) {
 	p := load(t)
-	r := p.Call(context.Background(), "on_wake", sdk.Input{Kind: sdk.KindWake, Wake: "later"}, harness.Options{})
+	r := p.Call(context.Background(), "on_wake", plugin.Input{Kind: plugin.KindWake, Wake: "later"}, harness.Options{})
 	if r.Outcome == nil || r.Outcome.Note != "woke with later" {
 		t.Fatalf("%+v", r)
 	}

@@ -18,10 +18,10 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/anant-barlota/girvi-plugins/contract"
-	"github.com/anant-barlota/girvi-plugins/harness"
-	"github.com/anant-barlota/girvi-plugins/manifest"
-	"github.com/anant-barlota/girvi-plugins/sdk"
+	"github.com/anant-barlota/girvi-sdk/plugin"
+	"github.com/anant-barlota/girvi-sdk/plugin/contract"
+	"github.com/anant-barlota/girvi-sdk/plugin/harness"
+	"github.com/anant-barlota/girvi-sdk/plugin/manifest"
 )
 
 // ModulePath is this repository's Go module, which plugins depend on for the SDK.
@@ -37,10 +37,10 @@ type NewRequest struct {
 	ID          string `json:"id" jsonschema:"plugin id, publisher/name in lower case, for example your-name/sms"`
 	Name        string `json:"name,omitempty" jsonschema:"name shown to the user; defaults to the name part of the id"`
 	Description string `json:"description,omitempty" jsonschema:"one sentence shown to the user"`
-	// SDK is a local checkout of girvi-plugins to use in place of a released
+	// SDK is a local checkout of girvi-sdk to use in place of a released
 	// version (a replace directive). Needed when this program was itself built
 	// from a checkout.
-	SDK string `json:"sdk,omitempty" jsonschema:"path to a local girvi-plugins checkout to use instead of a released SDK"`
+	SDK string `json:"sdk,omitempty" jsonschema:"path to a local girvi-sdk checkout to use instead of a released SDK"`
 }
 
 // NewResult is what New made.
@@ -74,7 +74,7 @@ go 1.25.0
 require {{.Require}}
 {{- if .Replace}}
 
-replace github.com/anant-barlota/girvi-plugins => {{.Replace}}
+replace github.com/anant-barlota/girvi-sdk => {{.Replace}}
 {{- end}}
 `,
 	"main.go": `//go:build wasip1
@@ -83,31 +83,31 @@ replace github.com/anant-barlota/girvi-plugins => {{.Replace}}
 // WebAssembly in it, so it is tested with plain go test.
 package main
 
-import "github.com/anant-barlota/girvi-plugins/sdk"
+import "github.com/anant-barlota/girvi-sdk/plugin"
 
 //go:wasmexport on_event
-func onEvent() { sdk.Run(handle) }
+func onEvent() { plugin.Run(handle) }
 
 func main() {}
 `,
 	"handler.go": `package main
 
-import "github.com/anant-barlota/girvi-plugins/sdk"
+import "github.com/anant-barlota/girvi-sdk/plugin"
 
 // handle is called for each event listed in plugin.json "events", and for Send
-// test. It decides what happened: sdk.OK, sdk.Failed, sdk.Blocked (a setting
-// needs fixing) or sdk.Retry. See the contract: girvi contract.
-func handle(h sdk.Host, in sdk.Input) sdk.Outcome {
+// test. It decides what happened: plugin.OK, plugin.Failed, plugin.Blocked (a setting
+// needs fixing) or plugin.Retry. See the contract: girvi contract.
+func handle(h plugin.Host, in plugin.Input) plugin.Outcome {
 	switch in.EventType() {
-	case sdk.EventLoanCreated:
+	case plugin.EventLoanCreated:
 		e, err := in.LoanCreated()
 		if err != nil {
-			return sdk.Failed(err.Error())
+			return plugin.Failed(err.Error())
 		}
 		h.Log("loan " + e.Loan.Number + " for " + e.Loan.Principal.Display)
-		return sdk.OK("")
+		return plugin.OK("")
 	}
-	return sdk.Failed("{{.Short}} does not handle " + in.EventType())
+	return plugin.Failed("{{.Short}} does not handle " + in.EventType())
 }
 `,
 	"handler_test.go": `package main
@@ -115,13 +115,13 @@ func handle(h sdk.Host, in sdk.Input) sdk.Outcome {
 import (
 	"testing"
 
-	"github.com/anant-barlota/girvi-plugins/sdk"
-	"github.com/anant-barlota/girvi-plugins/sdk/sdktest"
+	"github.com/anant-barlota/girvi-sdk/plugin"
+	"github.com/anant-barlota/girvi-sdk/plugin/plugintest"
 )
 
 func TestLoanCreated(t *testing.T) {
-	h := sdktest.New()
-	out := handle(h, sdktest.Event(t, sdk.EventLoanCreated, nil))
+	h := plugintest.New()
+	out := handle(h, plugintest.Event(t, plugin.EventLoanCreated, nil))
 	if out.Kind != "ok" {
 		t.Fatalf("outcome %+v", out)
 	}
@@ -172,8 +172,8 @@ func New(ctx context.Context, req NewRequest) (*NewResult, error) {
 		if err != nil {
 			return nil, err
 		}
-		if _, err := os.Stat(filepath.Join(abs, "sdk", "sdk.go")); err != nil {
-			return nil, fmt.Errorf("%s is not a girvi-plugins checkout", req.SDK)
+		if _, err := os.Stat(filepath.Join(abs, "plugin", "plugin.go")); err != nil {
+			return nil, fmt.Errorf("%s is not a girvi-sdk checkout", req.SDK)
 		}
 		s.Require, s.Replace = ModulePath+" v0.0.0", filepath.ToSlash(abs)
 	case v != "":
@@ -378,20 +378,20 @@ func Test(ctx context.Context, req TestRequest) (*harness.Result, error) {
 		opts.Storage[k] = []byte(v)
 	}
 	for _, r := range req.Responses {
-		opts.Responses = append(opts.Responses, sdk.Response{Status: r.Status, Body: []byte(r.Body), Error: r.Error})
+		opts.Responses = append(opts.Responses, plugin.Response{Status: r.Status, Body: []byte(r.Body), Error: r.Error})
 	}
 
 	kind := req.Kind
 	if kind == "" {
-		kind = sdk.KindEvent
+		kind = plugin.KindEvent
 	}
-	if kind == sdk.KindWake {
-		in := sdk.Input{Kind: sdk.KindWake, DeliveryID: "wake-1", Attempt: 1, Wake: req.Wake,
-			Firm: sdk.Firm{ID: "test-firm", Name: "Test Firm"}, Settings: harness.Settings(p.Manifest, req.Settings)}
+	if kind == plugin.KindWake {
+		in := plugin.Input{Kind: plugin.KindWake, DeliveryID: "wake-1", Attempt: 1, Wake: req.Wake,
+			Firm: plugin.Firm{ID: "test-firm", Name: "Test Firm"}, Settings: harness.Settings(p.Manifest, req.Settings)}
 		res := p.Call(ctx, "on_wake", in, opts)
 		return &res, nil
 	}
-	if kind != sdk.KindEvent && kind != sdk.KindTest {
+	if kind != plugin.KindEvent && kind != plugin.KindTest {
 		return nil, fmt.Errorf("kind must be event, test or wake, not %q", kind)
 	}
 	event := req.Event

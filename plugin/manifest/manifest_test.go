@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/anant-barlota/girvi-plugins/manifest"
+	"github.com/anant-barlota/girvi-sdk/plugin/manifest"
 )
 
 func TestParse(t *testing.T) {

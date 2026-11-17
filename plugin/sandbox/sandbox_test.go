@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/anant-barlota/girvi-plugins/contract"
-	"github.com/anant-barlota/girvi-plugins/sandbox"
-	"github.com/anant-barlota/girvi-plugins/sandbox/sandboxtest"
-	"github.com/anant-barlota/girvi-plugins/sdk"
+	"github.com/anant-barlota/girvi-sdk/plugin"
+	"github.com/anant-barlota/girvi-sdk/plugin/contract"
+	"github.com/anant-barlota/girvi-sdk/plugin/sandbox"
+	"github.com/anant-barlota/girvi-sdk/plugin/sandbox/sandboxtest"
 )
 
 func TestMemoryStore(t *testing.T) {
@@ -29,7 +29,7 @@ func TestNetworkRefusesThisComputer(t *testing.T) {
 	}))
 	defer srv.Close()
 	n := sandbox.NewNetwork()
-	req := sdk.Request{Method: "POST", URL: srv.URL + "/?token=secret"}
+	req := plugin.Request{Method: "POST", URL: srv.URL + "/?token=secret"}
 	if r := n.Send(context.Background(), req, false); r.Error == "" || strings.Contains(r.Error, "secret") {
 		t.Errorf("not local: %+v", r)
 	}
@@ -59,7 +59,7 @@ func TestRetryDelay(t *testing.T) {
 	for seconds, want := range map[int]time.Duration{
 		-5: time.Second, 0: time.Second, 300: 300 * time.Second, 1 << 62: contract.MaxDelay,
 	} {
-		if got := sandbox.RetryDelay(sdk.Retry(seconds, "")); got != want {
+		if got := sandbox.RetryDelay(plugin.Retry(seconds, "")); got != want {
 			t.Errorf("%d: %v, want %v", seconds, got, want)
 		}
 	}

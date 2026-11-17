@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/anant-barlota/girvi-plugins/sandbox"
+	"github.com/anant-barlota/girvi-sdk/plugin/sandbox"
 )
 
 // TestStore runs every check against a fresh, empty store from newStore.

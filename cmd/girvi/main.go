@@ -10,7 +10,7 @@
 //	girvi mcp
 //	girvi version
 //
-// Install it with: go install github.com/anant-barlota/girvi-plugins/cmd/girvi@latest
+// Install it with: go install github.com/anant-barlota/girvi-sdk/cmd/girvi@latest
 //
 // It never contains the Girvi app. Commands that act on a shop are to reach a
 // running Girvi through its API, as gh reaches GitHub.
@@ -27,10 +27,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/anant-barlota/girvi-plugins/contract"
-	"github.com/anant-barlota/girvi-plugins/harness"
-	"github.com/anant-barlota/girvi-plugins/internal/mcpserver"
-	"github.com/anant-barlota/girvi-plugins/internal/tool"
+	"github.com/anant-barlota/girvi-sdk/internal/mcpserver"
+	"github.com/anant-barlota/girvi-sdk/internal/tool"
+	"github.com/anant-barlota/girvi-sdk/plugin/contract"
+	"github.com/anant-barlota/girvi-sdk/plugin/harness"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
@@ -135,7 +135,7 @@ func cmdNew(ctx context.Context, args []string) error {
 	fs.StringVar(&req.ID, "id", "", "plugin id, publisher/name (required)")
 	fs.StringVar(&req.Name, "name", "", "name shown to the user")
 	fs.StringVar(&req.Description, "description", "", "one sentence shown to the user")
-	fs.StringVar(&req.SDK, "sdk", "", "a local girvi-plugins checkout to use instead of a released SDK")
+	fs.StringVar(&req.SDK, "sdk", "", "a local girvi-sdk checkout to use instead of a released SDK")
 	dir, err := parse(fs, args)
 	if err != nil {
 		return err
@@ -260,9 +260,9 @@ func cmdTest(ctx context.Context, args []string) error {
 // its own on the Plugins screen; the same version runs a plugin the same way.
 func runtimeVersion() string {
 	if v := contract.Version(); v != "" {
-		return "girvi-plugins " + v
+		return "girvi-sdk " + v
 	}
-	return "girvi-plugins (built from a checkout)"
+	return "girvi-sdk (built from a checkout)"
 }
 
 func printResult(w io.Writer, r *harness.Result) {

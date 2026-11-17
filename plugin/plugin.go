@@ -1,27 +1,27 @@
-// Package sdk is how a Girvi plugin is written in Go.
+// Package plugin is how a Girvi plugin is written in Go.
 //
 // A plugin is a WebAssembly module that Girvi runs in a sandbox. It cannot
 // touch files, the network or Girvi's records except through the Host it is
 // given, and only as far as its plugin.json allows. A handler is an ordinary
 // function:
 //
-//	func handle(h sdk.Host, in sdk.Input) sdk.Outcome {
+//	func handle(h plugin.Host, in plugin.Input) plugin.Outcome {
 //		loan, err := in.LoanCreated()
 //		if err != nil {
-//			return sdk.Failed(err.Error())
+//			return plugin.Failed(err.Error())
 //		}
 //		h.Log("loan " + loan.Loan.Number)
-//		return sdk.OK("")
+//		return plugin.OK("")
 //	}
 //
 // and main.go exports it (see the scaffold made by `girvi plugin new`):
 //
 //	//go:wasmexport on_event
-//	func onEvent() { sdk.Run(handle) }
+//	func onEvent() { plugin.Run(handle) }
 //
 // Nothing in a handler depends on WebAssembly, so it is tested with plain
-// `go test` and the fake host in package sdktest.
-package sdk
+// `go test` and the fake host in package plugintest.
+package plugin
 
 import (
 	"encoding/json"

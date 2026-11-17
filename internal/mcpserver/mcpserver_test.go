@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/anant-barlota/girvi-plugins/internal/mcpserver"
+	"github.com/anant-barlota/girvi-sdk/internal/mcpserver"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 

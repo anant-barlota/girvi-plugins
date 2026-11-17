@@ -1,6 +1,6 @@
 //go:build wasip1
 
-package sdk
+package plugin
 
 import (
 	"encoding/json"
@@ -100,10 +100,10 @@ func (wasmHost) WakeAt(unixSeconds int64, payload string) bool {
 // Run handles one call. Call it from each exported function:
 //
 //	//go:wasmexport on_event
-//	func onEvent() { sdk.Run(handleEvent) }
+//	func onEvent() { plugin.Run(handleEvent) }
 //
 //	//go:wasmexport on_wake
-//	func onWake() { sdk.Run(handleWake) }
+//	func onWake() { plugin.Run(handleWake) }
 //
 // A panic in the handler ends the call with no answer, which Girvi records.
 func Run(h Handler) {

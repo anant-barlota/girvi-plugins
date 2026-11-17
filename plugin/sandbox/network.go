@@ -13,9 +13,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/anant-barlota/girvi-plugins/contract"
-	"github.com/anant-barlota/girvi-plugins/manifest"
-	"github.com/anant-barlota/girvi-plugins/sdk"
+	"github.com/anant-barlota/girvi-sdk/plugin"
+	"github.com/anant-barlota/girvi-sdk/plugin/contract"
+	"github.com/anant-barlota/girvi-sdk/plugin/manifest"
 )
 
 // Network is the Sender Girvi uses: real requests, with the address checked
@@ -44,10 +44,10 @@ type localAllowedKey struct{}
 
 // Send makes the request. Unless local, it must not connect to this computer
 // or network.
-func (n *Network) Send(ctx context.Context, r sdk.Request, local bool) sdk.Response {
+func (n *Network) Send(ctx context.Context, r plugin.Request, local bool) plugin.Response {
 	req, err := http.NewRequestWithContext(context.WithValue(ctx, localAllowedKey{}, local), r.Method, r.URL, bytes.NewReader(r.Body))
 	if err != nil {
-		return sdk.Response{Error: err.Error()}
+		return plugin.Response{Error: err.Error()}
 	}
 	for k, v := range r.Headers {
 		req.Header.Set(k, v)
@@ -59,11 +59,11 @@ func (n *Network) Send(ctx context.Context, r sdk.Request, local bool) sdk.Respo
 		if errors.As(err, &uerr) {
 			err = uerr.Err
 		}
-		return sdk.Response{Error: err.Error()}
+		return plugin.Response{Error: err.Error()}
 	}
 	defer resp.Body.Close()
 	body, _ := io.ReadAll(io.LimitReader(resp.Body, contract.MaxHTTPResponse))
-	return sdk.Response{Status: resp.StatusCode, Body: body}
+	return plugin.Response{Status: resp.StatusCode, Body: body}
 }
 
 // guardDial runs just before a connection is made, with the address the name

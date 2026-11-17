@@ -21,9 +21,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/anant-barlota/girvi-plugins/contract"
-	"github.com/anant-barlota/girvi-plugins/manifest"
-	"github.com/anant-barlota/girvi-plugins/sdk"
+	"github.com/anant-barlota/girvi-sdk/plugin"
+	"github.com/anant-barlota/girvi-sdk/plugin/contract"
+	"github.com/anant-barlota/girvi-sdk/plugin/manifest"
 	"github.com/tetratelabs/wazero"
 	"github.com/tetratelabs/wazero/api"
 	"github.com/tetratelabs/wazero/imports/wasi_snapshot_preview1"
@@ -53,7 +53,7 @@ type Store interface {
 // Sender makes an HTTP request the manifest allows. local reports whether the
 // grant may reach this computer or network; Network enforces it.
 type Sender interface {
-	Send(ctx context.Context, r sdk.Request, local bool) sdk.Response
+	Send(ctx context.Context, r plugin.Request, local bool) plugin.Response
 }
 
 // Engine is one WebAssembly runtime with the host functions. Girvi shares one
@@ -123,7 +123,7 @@ func (m *Module) Close(ctx context.Context) { _ = m.compiled.Close(ctx) }
 // Call is one call into a plugin.
 type Call struct {
 	Export string // on_event or on_wake
-	Input  sdk.Input
+	Input  plugin.Input
 	Store  Store
 	HTTP   Sender
 	// Deadline is how long the call may run; zero means contract.CallDeadline.
@@ -160,7 +160,7 @@ func (e *NoAnswer) Error() string { return e.Detail }
 
 // Result is how a call ended. Exactly one of Outcome and NoAnswer is set.
 type Result struct {
-	Outcome  *sdk.Outcome
+	Outcome  *plugin.Outcome
 	NoAnswer *NoAnswer
 	Logs     []string
 	Requests []Request // only when recording
@@ -194,7 +194,7 @@ func (e *Engine) Run(ctx context.Context, m *Module, c Call) Result {
 		res.NoAnswer = err
 		return res
 	}
-	var out sdk.Outcome
+	var out plugin.Outcome
 	if json.Unmarshal(st.output, &out) != nil || !slices.Contains([]string{"ok", "failed", "blocked", "retry"}, out.Kind) {
 		res.NoAnswer = &NoAnswer{Reason: "no_outcome", Detail: "it returned no outcome"}
 		return res
@@ -316,7 +316,7 @@ func WakeTime(now time.Time, unixSeconds int64) time.Time {
 
 // RetryDelay is how long Girvi waits before calling again after a retry
 // outcome: the plugin's delay, at least a second and at most contract.MaxDelay.
-func RetryDelay(o sdk.Outcome) time.Duration {
+func RetryDelay(o plugin.Outcome) time.Duration {
 	s := min(max(int64(o.RetryInSeconds), 1), int64(contract.MaxDelay/time.Second))
 	return time.Duration(s) * time.Second
 }
@@ -429,18 +429,18 @@ func hostFunctions(ctx context.Context, rt wazero.Runtime) error {
 	return err
 }
 
-func (c *call) httpRequest(ctx context.Context, raw []byte) sdk.Response {
-	var r sdk.Request
+func (c *call) httpRequest(ctx context.Context, raw []byte) plugin.Response {
+	var r plugin.Request
 	if err := json.Unmarshal(raw, &r); err != nil {
-		return sdk.Response{Error: "bad request: " + err.Error()}
+		return plugin.Response{Error: "bad request: " + err.Error()}
 	}
 	rec := Request{Method: r.Method, URL: r.URL, Headers: r.Headers, Body: string(r.Body)}
-	refuse := func(why string) sdk.Response {
+	refuse := func(why string) plugin.Response {
 		if c.Record {
 			rec.Refused = why
 			c.res.Requests = append(c.res.Requests, rec)
 		}
-		return sdk.Response{Error: why}
+		return plugin.Response{Error: why}
 	}
 	u, err := url.Parse(r.URL)
 	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Hostname() == "" {

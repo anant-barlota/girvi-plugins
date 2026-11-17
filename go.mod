@@ -1,4 +1,4 @@
-module github.com/anant-barlota/girvi-plugins
+module github.com/anant-barlota/girvi-sdk
 
 go 1.25.0
 

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/anant-barlota/girvi-plugins/internal/tool"
+	"github.com/anant-barlota/girvi-sdk/internal/tool"
 )
 
 func repoRoot(t *testing.T) string {

@@ -3,7 +3,7 @@ package contract
 import "runtime/debug"
 
 // ModulePath is this repository's Go module.
-const ModulePath = "github.com/anant-barlota/girvi-plugins"
+const ModulePath = "github.com/anant-barlota/girvi-sdk"
 
 // Version is the version of this module the running program was built with:
 // for Girvi, the contract and sandbox it runs plugins with; for the CLI and

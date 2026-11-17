@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/anant-barlota/girvi-plugins/contract/plugin.schema.json",
+  "$id": "https://github.com/anant-barlota/girvi-sdk/plugin/contract/plugin.schema.json",
   "title": "Girvi plugin manifest (plugin.json), API girvi/v1",
   "description": "Who a Girvi plugin is and what it may do. Girvi applies further checks; `girvi plugin validate` runs them all.",
   "type": "object",

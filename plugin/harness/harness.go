@@ -14,10 +14,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/anant-barlota/girvi-plugins/contract"
-	"github.com/anant-barlota/girvi-plugins/manifest"
-	"github.com/anant-barlota/girvi-plugins/sandbox"
-	"github.com/anant-barlota/girvi-plugins/sdk"
+	"github.com/anant-barlota/girvi-sdk/plugin"
+	"github.com/anant-barlota/girvi-sdk/plugin/contract"
+	"github.com/anant-barlota/girvi-sdk/plugin/manifest"
+	"github.com/anant-barlota/girvi-sdk/plugin/sandbox"
 )
 
 // Plugin is a loaded plugin, ready to call.
@@ -72,7 +72,7 @@ type Options struct {
 	Settings map[string]string
 	// Responses answer the plugin's allowed HTTP requests, in order. When
 	// none are left, a request gets status 200 with an empty body.
-	Responses []sdk.Response
+	Responses []plugin.Response
 	// Storage is what the plugin's storage holds before the call.
 	Storage map[string][]byte
 	// Deadline is how long the call may run; Girvi's is 30 seconds.
@@ -88,9 +88,9 @@ type Wake = sandbox.Wake
 
 // Result is what one call did.
 type Result struct {
-	Export  string       `json:"export"`
-	Input   sdk.Input    `json:"input"`
-	Outcome *sdk.Outcome `json:"outcome,omitempty"`
+	Export  string          `json:"export"`
+	Input   plugin.Input    `json:"input"`
+	Outcome *plugin.Outcome `json:"outcome,omitempty"`
 	// NoAnswer is why the call ended without an outcome (a crash, a timeout,
 	// no outcome written). Girvi treats that as described under "No answer".
 	NoAnswer string            `json:"no_answer,omitempty"`
@@ -112,38 +112,38 @@ func Settings(m manifest.Manifest, saved map[string]string) map[string]string {
 
 // Input builds the input Girvi would give the plugin for an event: the
 // contract's sample of that type, with the customer details the manifest does
-// not ask for removed. kind is sdk.KindEvent or sdk.KindTest.
-func (p *Plugin) Input(eventType, kind string, saved map[string]string) (sdk.Input, error) {
-	if !p.Manifest.Wants(eventType) && kind == sdk.KindEvent {
-		return sdk.Input{}, fmt.Errorf("plugin.json does not subscribe to %q, so Girvi would never send it", eventType)
+// not ask for removed. kind is plugin.KindEvent or plugin.KindTest.
+func (p *Plugin) Input(eventType, kind string, saved map[string]string) (plugin.Input, error) {
+	if !p.Manifest.Wants(eventType) && kind == plugin.KindEvent {
+		return plugin.Input{}, fmt.Errorf("plugin.json does not subscribe to %q, so Girvi would never send it", eventType)
 	}
 	raw, err := contract.Fixture(eventType)
 	if err != nil {
-		return sdk.Input{}, err
+		return plugin.Input{}, err
 	}
 	event, err := contract.ForPlugin(raw, p.Manifest.Fields)
 	if err != nil {
-		return sdk.Input{}, err
+		return plugin.Input{}, err
 	}
-	var env sdk.Envelope
+	var env plugin.Envelope
 	_ = json.Unmarshal(event, &env)
-	return sdk.Input{
+	return plugin.Input{
 		Kind: kind, DeliveryID: env.ID, Attempt: 1, Event: event,
-		Firm: sdk.Firm{ID: "test-firm", Name: "Test Firm"}, Settings: p.Manifest.SettingsFor(saved),
+		Firm: plugin.Firm{ID: "test-firm", Name: "Test Firm"}, Settings: p.Manifest.SettingsFor(saved),
 	}, nil
 }
 
 // script answers allowed requests from Options.Responses, in order.
 type script struct {
 	mu        sync.Mutex
-	responses []sdk.Response
+	responses []plugin.Response
 }
 
-func (s *script) Send(context.Context, sdk.Request, bool) sdk.Response {
+func (s *script) Send(context.Context, plugin.Request, bool) plugin.Response {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if len(s.responses) == 0 {
-		return sdk.Response{Status: 200}
+		return plugin.Response{Status: 200}
 	}
 	resp := s.responses[0]
 	s.responses = s.responses[1:]
@@ -151,7 +151,7 @@ func (s *script) Send(context.Context, sdk.Request, bool) sdk.Response {
 }
 
 // Call runs one export ("on_event" or "on_wake") with an input.
-func (p *Plugin) Call(ctx context.Context, export string, in sdk.Input, opts Options) Result {
+func (p *Plugin) Call(ctx context.Context, export string, in plugin.Input, opts Options) Result {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	start := time.Now()

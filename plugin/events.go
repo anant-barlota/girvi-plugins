@@ -1,4 +1,4 @@
-package sdk
+package plugin
 
 // The events a plugin can subscribe to, and their data. This is the girvi/v1
 // contract: adding a field is compatible; removing or renaming one is not.

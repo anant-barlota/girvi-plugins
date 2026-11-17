@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/anant-barlota/girvi-sdk/internal/tool"
 	"github.com/anant-barlota/girvi-sdk/plugin/registry"
 )
 
@@ -75,4 +76,32 @@ func loadIndex(path string) (*registry.Index, error) {
 		return nil, err
 	}
 	return registry.Parse(data)
+}
+
+func cmdPublish(ctx context.Context, args []string) error {
+	fs := flag.NewFlagSet("plugin publish", flag.ExitOnError)
+	var req tool.PublishRequest
+	fs.StringVar(&req.Repo, "repo", "", "GitHub repository whose release holds the bundle, owner/repo (required)")
+	fs.StringVar(&req.Index, "index", "", "index.json in a checkout of the catalog repository (required)")
+	fs.StringVar(&req.Tag, "tag", "", "the release tag (default v<version>)")
+	fs.StringVar(&req.Homepage, "homepage", "", "the plugin's homepage (default https://github.com/<repo>)")
+	fs.StringVar(&req.License, "license", "", "the plugin's license, such as MIT")
+	asJSON := fs.Bool("json", false, "print the result as JSON")
+	dir, err := parse(fs, args)
+	if err != nil {
+		return err
+	}
+	req.Dir = dir
+	p, err := tool.Publish(ctx, http.DefaultClient, req)
+	if err != nil {
+		return err
+	}
+	if *asJSON {
+		return printJSON(p)
+	}
+	fmt.Printf("listed %s %s in %s\nbundle %s\nsha256 %s\n\nNext:\n", p.ID, p.Version, p.Index, p.Bundle.URL, p.Bundle.SHA256)
+	for _, n := range p.Next {
+		fmt.Println("  " + n)
+	}
+	return nil
 }

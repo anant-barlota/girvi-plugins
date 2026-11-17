@@ -37,6 +37,7 @@ type NewRequest struct {
 	ID          string `json:"id" jsonschema:"plugin id, publisher/name in lower case, for example your-name/sms"`
 	Name        string `json:"name,omitempty" jsonschema:"name shown to the user; defaults to the name part of the id"`
 	Description string `json:"description,omitempty" jsonschema:"one sentence shown to the user"`
+	Author      string `json:"author,omitempty" jsonschema:"who made it, shown to the user; defaults to the publisher part of the id"`
 	// SDK is a local checkout of girvi-sdk to use in place of a released
 	// version (a replace directive). Needed when this program was itself built
 	// from a checkout.
@@ -54,7 +55,7 @@ type NewResult struct {
 }
 
 type scaffold struct {
-	ID, Name, Short, Description, Module, Require, Replace string
+	ID, Name, Short, Description, Author, Module, Require, Replace string
 }
 
 var scaffoldFiles = map[string]string{
@@ -64,6 +65,7 @@ var scaffoldFiles = map[string]string{
   "version": "0.1.0",
   "api": "girvi/v1",
   "description": "{{.Description}}",
+  "author": "{{.Author}}",
   "events": ["loan.created"]
 }
 `,
@@ -158,8 +160,11 @@ func New(ctx context.Context, req NewRequest) (*NewResult, error) {
 	if entries, err := os.ReadDir(req.Dir); err == nil && len(entries) > 0 {
 		return nil, fmt.Errorf("%s is not empty", req.Dir)
 	}
-	_, short, _ := strings.Cut(req.ID, "/")
-	s := scaffold{ID: req.ID, Name: req.Name, Short: short, Description: req.Description, Module: req.ID}
+	publisher, short, _ := strings.Cut(req.ID, "/")
+	s := scaffold{ID: req.ID, Name: req.Name, Short: short, Description: req.Description, Author: req.Author, Module: req.ID}
+	if s.Author == "" {
+		s.Author = publisher
+	}
 	if s.Name == "" {
 		s.Name = short
 	}
@@ -206,6 +211,7 @@ func New(ctx context.Context, req NewRequest) (*NewResult, error) {
 		"Edit handler.go, and test it with: go test ./...",
 		"Build the bundle with: girvi plugin build",
 		"Run it against a sample event with: girvi plugin test",
+		"Release it, then list it in a catalog with: girvi plugin publish",
 	}
 	return res, nil
 }

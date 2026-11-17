@@ -213,6 +213,31 @@ func CheckImmutable(old, cur *Index) []string {
 	return problems
 }
 
+// Add lists version v of plugin e.ID, adding the plugin if it is new. The
+// plugin's name, author and description become e's, so they follow its latest
+// plugin.json; its homepage and license change only when e gives them. A
+// version already listed is refused: it was published and cannot change.
+func Add(idx *Index, e Entry, v Version) error {
+	i := slices.IndexFunc(idx.Plugins, func(p Entry) bool { return p.ID == e.ID })
+	if i < 0 {
+		idx.Plugins = append(idx.Plugins, Entry{ID: e.ID})
+		i = len(idx.Plugins) - 1
+	}
+	p := &idx.Plugins[i]
+	if slices.ContainsFunc(p.Versions, func(old Version) bool { return old.Version == v.Version }) {
+		return fmt.Errorf("%s %s is already listed, and a published version cannot change. Release a new version", e.ID, v.Version)
+	}
+	p.Name, p.Author, p.Description = e.Name, e.Author, e.Description
+	if e.Homepage != "" {
+		p.Homepage = e.Homepage
+	}
+	if e.License != "" {
+		p.License = e.License
+	}
+	p.Versions = append(p.Versions, v)
+	return nil
+}
+
 // Canonical orders the catalog the same way every time, so a change shows up
 // as a small diff.
 func Canonical(idx *Index) []byte {

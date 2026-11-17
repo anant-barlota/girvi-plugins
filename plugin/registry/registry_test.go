@@ -106,6 +106,31 @@ func TestAMisspelledKeyIsAnErrorNotAMissingChecksum(t *testing.T) {
 	}
 }
 
+func TestAddListsNewPluginsAndVersionsOnce(t *testing.T) {
+	idx := &Index{Schema: Schema, Name: "Test"}
+	v := good().Plugins[0].Versions[0]
+	e := Entry{ID: "acme/hook", Name: "Hook", Author: "Acme", Description: "does a thing", License: "MIT"}
+	if err := Add(idx, e, v); err != nil {
+		t.Fatal(err)
+	}
+	if err := Add(idx, e, v); err == nil || !strings.Contains(err.Error(), "already listed") {
+		t.Errorf("listing a version twice: %v", err)
+	}
+	next := v
+	next.Version = "1.1.0"
+	e.Description, e.License = "does it better", ""
+	if err := Add(idx, e, next); err != nil {
+		t.Fatal(err)
+	}
+	p := idx.Plugins[0]
+	if len(idx.Plugins) != 1 || len(p.Versions) != 2 || p.Description != "does it better" || p.License != "MIT" {
+		t.Errorf("after a second version: %+v", idx.Plugins)
+	}
+	if problems := Validate(idx, Policy{OwnerMustMatchID: true}); len(problems) != 0 {
+		t.Errorf("problems: %v", problems)
+	}
+}
+
 func TestTheCatalogIsWrittenInAStableOrder(t *testing.T) {
 	idx := good()
 	idx.Plugins = append([]Entry{{ID: "zed/last", Versions: []Version{{Version: "1.10.0"}, {Version: "1.2.0"}}}}, idx.Plugins...)

@@ -30,7 +30,7 @@ may do, approve it, and turn it on per firm.
 
 ## Write a plugin
 
-You need Go 1.25 or later.
+You need Go 1.27.4 or later.
 
 ```sh
 go install github.com/anant-barlota/girvi-sdk/cmd/girvi@<version>

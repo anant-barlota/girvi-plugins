@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/anant-barlota/girvi-sdk/plugin/contract/plugin.schema.json",
+  "title": "Girvi plugin manifest (plugin.json), API girvi/v1",
+  "description": "Who a Girvi plugin is and what it may do. Girvi applies further checks; `girvi plugin validate` runs them all.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "name", "version", "api"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*/[a-z0-9][a-z0-9-]*$",
+      "description": "publisher/name, lower case. girvi/ is reserved for official plugins."
+    },
+    "name": { "type": "string", "minLength": 1, "description": "Shown to the user." },
+    "version": { "type": "string", "minLength": 1, "description": "Shown to the user." },
+    "api": { "const": "girvi/v1" },
+    "description": { "type": "string" },
+    "author": { "type": "string" },
+    "events": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "enum": ["loan.created", "payment.received", "loan.redeemed"] },
+      "description": "Events the plugin is told about."
+    },
+    "fields": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "enum": ["customer.name", "customer.phone"] },
+      "description": "Personal details the plugin is given. Without them, those fields are absent from every event."
+    },
+    "http_hosts": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "anyOf": [
+          { "pattern": "^\\{setting:[a-z][a-z0-9_]*\\}$" },
+          { "pattern": "^\\*(\\.[a-z0-9]([a-z0-9-]*[a-z0-9])?){2,}$" },
+          { "pattern": "^[a-z0-9]([a-z0-9.-]*[a-z0-9])?(:[0-9]{1,5})?$" }
+        ]
+      },
+      "description": "Where the plugin may send requests: a host, host:port, *.domain (two labels or more), or {setting:KEY} for the URL the user typed into that setting. A host on this computer or the shop's network must name a port."
+    },
+    "settings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["key"],
+        "properties": {
+          "key": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "type": { "enum": ["string", "boolean"] },
+          "secret": { "type": "boolean" },
+          "required": { "type": "boolean" },
+          "default": { "type": "string" },
+          "advanced": { "type": "boolean" }
+        }
+      },
+      "description": "The settings form Girvi shows, per firm."
+    },
+    "delivery": {
+      "enum": ["at_least_once", "at_most_once"],
+      "description": "What happens to a call that ends with no answer. Default at_least_once."
+    }
+  }
+}

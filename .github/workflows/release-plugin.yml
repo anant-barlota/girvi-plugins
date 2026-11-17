@@ -1,0 +1,81 @@
+# Builds a Girvi plugin bundle and publishes it, with its SHA-256, as a GitHub
+# Release. Plugin authors call this from their own repository, so every plugin
+# is built the same way:
+#
+#   on:
+#     push:
+#       tags: ['v*']
+#   jobs:
+#     release:
+#       uses: anant-barlota/girvi-sdk/.github/workflows/release-plugin.yml@<commit>
+#
+# The bundle is built by the girvi command at the SDK version the plugin's go.mod
+# requires, so it is checked with the rules of the contract it was written for.
+# The tag, without its "v" (and without a folder prefix such as "sms/"), must
+# equal the version in plugin.json.
+name: Release a Girvi plugin
+
+on:
+  workflow_call:
+    inputs:
+      path:
+        description: Folder of the plugin, relative to the repository root
+        required: false
+        default: "."
+        type: string
+      prerelease:
+        description: Mark the GitHub Release as a pre-release
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    defaults:
+      run:
+        working-directory: ${{ inputs.path }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: ${{ inputs.path }}/go.mod
+      - name: Check the version
+        env:
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          version="${REF_NAME##*/}"
+          version="${version#v}"
+          declared="$(python3 -c 'import json; print(json.load(open("plugin.json"))["version"])')"
+          if [ "$version" != "$declared" ]; then
+            echo "The tag says $version but plugin.json says $declared." >&2
+            exit 1
+          fi
+      - name: Build
+        run: |
+          set -euo pipefail
+          sdk="$(go list -m -f '{{.Version}}' github.com/anant-barlota/girvi-sdk)"
+          go get "github.com/anant-barlota/girvi-sdk/cmd/girvi@${sdk}"
+          go run github.com/anant-barlota/girvi-sdk/cmd/girvi plugin build
+          cd dist
+          rm -f plugin.wasm
+          sha256sum ./*.zip > SHA256SUMS
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+          PRERELEASE: ${{ inputs.prerelease }}
+        run: |
+          set -euo pipefail
+          flags=()
+          if [ "$PRERELEASE" = "true" ]; then flags+=(--prerelease); fi
+          gh release create "$TAG" dist/* --repo "$REPO" --title "${TAG##*/}" \
+            --notes "The plugin bundle for Girvi. Check it against SHA256SUMS, or install from a Girvi catalog, which does it for you." \
+            "${flags[@]}"

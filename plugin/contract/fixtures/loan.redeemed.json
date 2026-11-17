@@ -1,0 +1,26 @@
+{
+  "data": {
+    "customer": {
+      "id": "01a1e951-a432-74bf-bc41-752ba628f2e3",
+      "name": "Asha Patel",
+      "phone": "98765 43210",
+      "phone_e164": "+919876543210"
+    },
+    "loan": {
+      "id": "01a1e953-e8d7-7274-b307-0b910c464a5b",
+      "number": "F-1024"
+    },
+    "redeemed_on": {
+      "display": "12 Feb 2027",
+      "iso": "2027-02-12"
+    },
+    "returned_weight": {
+      "display": "14.000 g",
+      "milligrams": 14000
+    }
+  },
+  "id": "01a1f0b2-7d10-7c21-8e32-4f43a54b6c7d",
+  "occurred_at": "2027-02-12T07:02:41Z",
+  "type": "loan.redeemed",
+  "version": 1
+}

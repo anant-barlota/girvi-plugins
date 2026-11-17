@@ -14,12 +14,12 @@ import (
 	"context"
 	"log"
 
-	"github.com/anant-barlota/girvi-plugins/internal/server"
+	"github.com/anant-barlota/girvi-plugins/internal/mcpserver"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 func main() {
-	if err := server.New().Run(context.Background(), &mcp.StdioTransport{}); err != nil {
+	if err := mcpserver.New().Run(context.Background(), &mcp.StdioTransport{}); err != nil {
 		log.Fatal(err)
 	}
 }

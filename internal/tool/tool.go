@@ -15,35 +15,21 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime/debug"
 	"strings"
 	"text/template"
 
+	"github.com/anant-barlota/girvi-plugins/contract"
 	"github.com/anant-barlota/girvi-plugins/harness"
 	"github.com/anant-barlota/girvi-plugins/manifest"
 	"github.com/anant-barlota/girvi-plugins/sdk"
 )
 
 // ModulePath is this repository's Go module, which plugins depend on for the SDK.
-const ModulePath = "github.com/anant-barlota/girvi-plugins"
+const ModulePath = contract.ModulePath
 
 // SDKVersion is the version of this module the running program was built
-// from, or "" when it was built from a local checkout.
-func SDKVersion() string {
-	info, ok := debug.ReadBuildInfo()
-	if !ok {
-		return ""
-	}
-	if info.Main.Path == ModulePath && info.Main.Version != "" && info.Main.Version != "(devel)" {
-		return info.Main.Version
-	}
-	for _, d := range info.Deps {
-		if d.Path == ModulePath && d.Version != "(devel)" {
-			return d.Version
-		}
-	}
-	return ""
-}
+// with, or "" for a build from a checkout.
+func SDKVersion() string { return contract.Version() }
 
 // NewRequest describes a plugin to make.
 type NewRequest struct {

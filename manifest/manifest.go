@@ -164,6 +164,21 @@ func Parse(raw []byte) (Manifest, error) {
 }
 
 // Wants reports whether the plugin subscribes to an event.
+// SettingsFor is what a plugin is given for a firm: declared keys only, with
+// defaults filled in. A value left by an older version is not this code's to
+// read.
+func (m Manifest) SettingsFor(saved map[string]string) map[string]string {
+	out := map[string]string{}
+	for _, s := range m.Settings {
+		if v, ok := saved[s.Key]; ok {
+			out[s.Key] = v
+		} else if s.Default != "" {
+			out[s.Key] = s.Default
+		}
+	}
+	return out
+}
+
 func (m Manifest) Wants(event string) bool { return slices.Contains(m.Events, event) }
 
 // Bundle is an installable plugin: a zip holding plugin.json and plugin.wasm.

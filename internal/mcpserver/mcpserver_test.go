@@ -1,4 +1,4 @@
-package server_test
+package mcpserver_test
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/anant-barlota/girvi-plugins/internal/server"
+	"github.com/anant-barlota/girvi-plugins/internal/mcpserver"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
@@ -15,7 +15,7 @@ func session(t *testing.T) *mcp.ClientSession {
 	t.Helper()
 	ctx := context.Background()
 	serverEnd, clientEnd := mcp.NewInMemoryTransports()
-	ss, err := server.New().Connect(ctx, serverEnd, nil)
+	ss, err := mcpserver.New().Connect(ctx, serverEnd, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

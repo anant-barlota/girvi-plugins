@@ -33,6 +33,7 @@ const usage = `girvi-plugin makes, checks, builds and tests Girvi plugins.
   girvi-plugin build [dir]                     compile to dist/plugin.wasm and zip the bundle
   girvi-plugin test [dir]                      run the built plugin against a sample event
   girvi-plugin contract                        print the girvi/1 contract
+  girvi-plugin version                         the runtime version this tool runs plugins with
 
 Run a command with -h for its options. dir defaults to the current folder.
 `
@@ -55,6 +56,8 @@ func main() {
 		err = cmdTest(ctx, os.Args[2:])
 	case "contract":
 		err = cmdContract(os.Stdout, os.Args[2:])
+	case "version":
+		fmt.Println(runtimeVersion())
 	case "-h", "--help", "help":
 		fmt.Print(usage)
 	default:
@@ -216,7 +219,17 @@ func cmdTest(ctx context.Context, args []string) error {
 	return nil
 }
 
+// runtimeVersion names the sandbox this tool runs plugins with. Girvi shows
+// its own on the Plugins screen; the same version runs a plugin the same way.
+func runtimeVersion() string {
+	if v := contract.Version(); v != "" {
+		return "girvi-plugins " + v
+	}
+	return "girvi-plugins (built from a checkout)"
+}
+
 func printResult(w io.Writer, r *harness.Result) {
+	fmt.Fprintln(w, "runtime:", runtimeVersion())
 	fmt.Fprintf(w, "%s, %s %s (%s)\n", r.Export, r.Input.Kind, r.Input.EventType(), r.Duration.Round(1e6))
 	if r.Outcome != nil {
 		fmt.Fprintf(w, "outcome: %s", r.Outcome.Kind)

@@ -20,9 +20,10 @@ may do, approve it, and turn it on per firm.
 | [`contract/plugin.schema.json`](contract/plugin.schema.json) | JSON schema of `plugin.json`, for editor completion. |
 | [`contract/fixtures`](contract/fixtures) | A sample of every event, as Girvi sends it. |
 | [`sdk`](sdk) | The Go SDK. Handlers are ordinary functions; `sdk/sdktest` is a fake host for `go test`. |
-| [`cmd/girvi-plugin`](cmd/girvi-plugin) | The CLI: `new`, `validate`, `build`, `test`, `contract`. |
+| [`cmd/girvi-plugin`](cmd/girvi-plugin) | The CLI: `new`, `validate`, `build`, `test`, `contract`, `version`. |
 | [`cmd/girvi-plugin-mcp`](cmd/girvi-plugin-mcp) | The same, as MCP tools for an AI assistant. |
-| [`harness`](harness) | A stand-in for Girvi that runs a built plugin with Girvi's checks and limits. Used by `test`. |
+| [`sandbox`](sandbox) | Girvi's plugin runtime: host functions, limits, deadline, what counts as an answer. Girvi runs plugins with it. |
+| [`harness`](harness) | The same runtime with storage in memory and scripted HTTP, so a test sends nothing. Used by `test`. |
 | [`manifest`](manifest) | Reads and checks `plugin.json`, bundles and their imports, and which hosts a plugin may reach, with Girvi's own rules. |
 | [`examples/webhook`](examples/webhook) | A complete plugin: posts loan events as signed JSON to a URL each firm chooses. |
 
@@ -69,8 +70,10 @@ girvi-plugin test                # run it in the sandbox against a sample event
    Girvi records it and does what it says.
 3. **Test the logic** with `go test`, using `sdktest.New()` as the host and `sdktest.Event(t, sdk.EventLoanCreated,
    settings)` as the input.
-4. **Test the build** with `girvi-plugin test`. It runs the real `.wasm` with Girvi's import checks, sandbox and
-   limits. Network requests are not made: they are answered from `--respond` and listed, so nothing is sent.
+4. **Test the build** with `girvi-plugin test`. It runs the real `.wasm` in Girvi's own runtime (package `sandbox`),
+   so imports, limits and answers are handled exactly as Girvi does. Storage is in memory, and network requests are
+   not made: they are answered from `--respond` and listed, so nothing is sent. The first line names the runtime
+   version; Girvi shows the one it uses on its Plugins screen, and the same version behaves the same.
 
    ```sh
    girvi-plugin test --event payment.received --set url=https://example.com/hook --respond 503

@@ -8,9 +8,10 @@ exports it to accounting. It is a WebAssembly module that Girvi runs in a sandbo
 Girvi's records, and can reach only the hosts its manifest names. Shops install a plugin from a file, see what it
 may do, approve it, and turn it on per firm.
 
-> **Status:** `girvi/v1` is new and not yet frozen. It is at pre-release tags `v0.2.0-alpha.*` and may still change
-> between them. This repository was `girvi-plugins` until `v0.2.0-alpha.6`; earlier tags, including the older
-> process-based SDK at `v0.1.0-alpha.*`, are under the module path `github.com/anant-barlota/girvi-plugins`.
+> **Status:** `girvi/v1` is new and not yet frozen. Releases are `v0.0.x` for now, and the contract may still change
+> between them. This repository was `girvi-plugins`: tags before `v0.2.0-alpha.6`, including the older
+> process-based SDK at `v0.1.0-alpha.*`, belong to the module path `github.com/anant-barlota/girvi-plugins`. They
+> are pre-releases, so Go's `@latest` is the newest `v0.0.x` release.
 
 ## Contents
 

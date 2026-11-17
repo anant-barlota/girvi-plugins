@@ -30,38 +30,10 @@ import (
 	"github.com/tetratelabs/wazero/sys"
 )
 
-// The limits Girvi applies. See the contract.
 const (
-	MemoryLimitMB   = 64
-	CallDeadline    = 30 * time.Second
-	MaxHTTPResponse = 1 << 20
-	MaxStorageKey   = 256
-	MaxStorageValue = 1 << 20
-	MaxStorageKeys  = 1000
-	MaxStorageBytes = 16 << 20
-	MaxWakeUps      = 100
-	MaxWakePayload  = 64 << 10
-	MaxLogLines     = 50
-	MaxLogLine      = 500
-	MaxStderr       = 16 << 10
-	MinWakeDelay    = time.Second
-	MaxDelay        = 365 * 24 * time.Hour
-)
-
-const (
-	hostModule = "girvi_v1"
 	wasiModule = "wasi_snapshot_preview1"
 	wasmPage   = 64 << 10
-
-	hostOK      int32 = 0
-	hostMissing int32 = -1
-	hostError   int32 = -2
 )
-
-var alwaysGranted = map[string]bool{
-	"input_len": true, "input_read": true, "output": true, "result_read": true, "log": true,
-	"storage_get": true, "storage_set": true, "storage_delete": true, "wake_at": true,
-}
 
 // Plugin is a loaded plugin, ready to call.
 type Plugin struct {
@@ -80,7 +52,7 @@ func Load(ctx context.Context, manifestJSON, wasm []byte) (*Plugin, error) {
 	}
 	cfg := wazero.NewRuntimeConfig().
 		WithCloseOnContextDone(true).
-		WithMemoryLimitPages(MemoryLimitMB << 20 / wasmPage)
+		WithMemoryLimitPages(contract.MemoryLimitMB << 20 / wasmPage)
 	rt := wazero.NewRuntimeWithConfig(ctx, cfg)
 	p := &Plugin{Manifest: m, rt: rt}
 	if _, err := wasi_snapshot_preview1.Instantiate(ctx, rt); err != nil {
@@ -97,7 +69,7 @@ func Load(ctx context.Context, manifestJSON, wasm []byte) (*Plugin, error) {
 		return nil, fmt.Errorf("plugin.wasm is not valid: %w", err)
 	}
 	p.compiled = compiled
-	if err := CheckImports(m, compiled); err != nil {
+	if err := m.CheckImports(compiled); err != nil {
 		p.Close(ctx)
 		return nil, err
 	}
@@ -115,28 +87,6 @@ func LoadBundle(ctx context.Context, zipBytes []byte) (*Plugin, error) {
 		return nil, err
 	}
 	return Load(ctx, raw, b.Wasm)
-}
-
-// CheckImports refuses a module that imports something its manifest does not
-// grant, or that Girvi could never call.
-func CheckImports(m manifest.Manifest, compiled wazero.CompiledModule) error {
-	for _, f := range compiled.ImportedFunctions() {
-		mod, name, _ := f.Import()
-		switch {
-		case mod == wasiModule:
-		case mod == hostModule && alwaysGranted[name]:
-		case mod == hostModule && name == "http_request":
-			if len(m.HTTPHosts) == 0 {
-				return errors.New("the plugin makes network calls but its plugin.json lists no http_hosts")
-			}
-		default:
-			return fmt.Errorf("the plugin asks for %s.%s, which Girvi does not provide", mod, name)
-		}
-	}
-	if _, ok := compiled.ExportedFunctions()["on_event"]; !ok {
-		return errors.New("plugin.wasm has no on_event function, so Girvi could never call it")
-	}
-	return nil
 }
 
 // Exports lists the functions the plugin exports for Girvi.
@@ -271,7 +221,7 @@ func (p *Plugin) Call(ctx context.Context, export string, in sdk.Input, opts Opt
 	c := &call{manifest: p.Manifest, input: raw, responses: opts.Responses, storage: storage, settings: in.Settings}
 	deadline := opts.Deadline
 	if deadline == 0 {
-		deadline = CallDeadline
+		deadline = contract.CallDeadline
 	}
 
 	if err := p.run(ctx, export, c, deadline); err != nil {
@@ -307,7 +257,7 @@ func (p *Plugin) run(ctx context.Context, export string, c *call, deadline time.
 	ctx, cancel := context.WithTimeout(context.WithValue(ctx, callKey{}, c), deadline)
 	defer cancel()
 
-	stderr := &cappedBuffer{limit: MaxStderr}
+	stderr := &cappedBuffer{limit: contract.MaxStderr}
 	cfg := wazero.NewModuleConfig().
 		WithName("").
 		WithStartFunctions("_initialize").
@@ -356,7 +306,7 @@ func callError(ctx context.Context, err error, stderr *cappedBuffer, deadline ti
 			detail = fmt.Sprintf("it exited with code %d", exit.ExitCode())
 		}
 	}
-	return errors.New(truncate(detail, MaxLogLine))
+	return errors.New(truncate(detail, contract.MaxLogLine))
 }
 
 func truncate(s string, n int) string {
@@ -390,7 +340,7 @@ func storageSize(s map[string][]byte) int64 {
 
 func hostFunctions(ctx context.Context, rt wazero.Runtime) error {
 	state := func(ctx context.Context) *call { return ctx.Value(callKey{}).(*call) }
-	b := rt.NewHostModuleBuilder(hostModule)
+	b := rt.NewHostModuleBuilder(contract.HostModule)
 
 	b.NewFunctionBuilder().WithFunc(func(ctx context.Context) uint32 {
 		return uint32(len(state(ctx).input))
@@ -410,8 +360,8 @@ func hostFunctions(ctx context.Context, rt wazero.Runtime) error {
 
 	b.NewFunctionBuilder().WithFunc(func(ctx context.Context, m api.Module, ptr, n uint32) {
 		c := state(ctx)
-		if len(c.logs) < MaxLogLines {
-			c.logs = append(c.logs, truncate(string(read(m, ptr, min(n, MaxLogLine+1))), MaxLogLine))
+		if len(c.logs) < contract.MaxLogLines {
+			c.logs = append(c.logs, truncate(string(read(m, ptr, min(n, contract.MaxLogLine+1))), contract.MaxLogLine))
 		}
 	}).Export("log")
 
@@ -423,12 +373,12 @@ func hostFunctions(ctx context.Context, rt wazero.Runtime) error {
 
 	b.NewFunctionBuilder().WithFunc(func(ctx context.Context, m api.Module, kp, kn uint32) int32 {
 		c := state(ctx)
-		if kn > MaxStorageKey {
-			return hostError
+		if kn > contract.MaxStorageKey {
+			return contract.HostError
 		}
 		v, ok := c.storage[string(read(m, kp, kn))]
 		if !ok {
-			return hostMissing
+			return contract.HostMissing
 		}
 		c.result = v
 		return int32(len(v))
@@ -436,24 +386,24 @@ func hostFunctions(ctx context.Context, rt wazero.Runtime) error {
 
 	b.NewFunctionBuilder().WithFunc(func(ctx context.Context, m api.Module, kp, kn, vp, vn uint32) int32 {
 		c := state(ctx)
-		if kn == 0 || kn > MaxStorageKey || vn > MaxStorageValue {
-			return hostError
+		if kn == 0 || kn > contract.MaxStorageKey || vn > contract.MaxStorageValue {
+			return contract.HostError
 		}
 		// As in Girvi, an overwrite is counted as if it were new.
-		if len(c.storage) >= MaxStorageKeys || storageSize(c.storage)+int64(kn)+int64(vn) > MaxStorageBytes {
-			return hostError
+		if len(c.storage) >= contract.MaxStorageKeys || storageSize(c.storage)+int64(kn)+int64(vn) > contract.MaxStorageBytes {
+			return contract.HostError
 		}
 		c.storage[string(read(m, kp, kn))] = read(m, vp, vn)
-		return hostOK
+		return contract.HostOK
 	}).Export("storage_set")
 
 	b.NewFunctionBuilder().WithFunc(func(ctx context.Context, m api.Module, kp, kn uint32) int32 {
 		c := state(ctx)
-		if kn > MaxStorageKey {
-			return hostError
+		if kn > contract.MaxStorageKey {
+			return contract.HostError
 		}
 		delete(c.storage, string(read(m, kp, kn)))
-		return hostOK
+		return contract.HostOK
 	}).Export("storage_delete")
 
 	b.NewFunctionBuilder().WithFunc(func(ctx context.Context, m api.Module, unixSeconds int64, pp, pn uint32) int32 {
@@ -464,12 +414,12 @@ func hostFunctions(ctx context.Context, rt wazero.Runtime) error {
 				pending++
 			}
 		}
-		if pn > MaxWakePayload || pending >= MaxWakeUps {
-			c.wakes = append(c.wakes, Wake{Payload: truncate(string(read(m, pp, min(pn, MaxLogLine+1))), MaxLogLine), Refused: true})
-			return hostError
+		if pn > contract.MaxWakePayload || pending >= contract.MaxWakeUps {
+			c.wakes = append(c.wakes, Wake{Payload: truncate(string(read(m, pp, min(pn, contract.MaxLogLine+1))), contract.MaxLogLine), Refused: true})
+			return contract.HostError
 		}
 		now := time.Now()
-		earliest, latest := now.Add(MinWakeDelay), now.Add(MaxDelay)
+		earliest, latest := now.Add(contract.MinWakeDelay), now.Add(contract.MaxDelay)
 		at := earliest
 		if unixSeconds > latest.Unix() {
 			at = latest
@@ -477,7 +427,7 @@ func hostFunctions(ctx context.Context, rt wazero.Runtime) error {
 			at = time.Unix(unixSeconds, 0)
 		}
 		c.wakes = append(c.wakes, Wake{At: at.UTC(), Payload: string(read(m, pp, pn))})
-		return hostOK
+		return contract.HostOK
 	}).Export("wake_at")
 
 	_, err := b.Instantiate(ctx)
@@ -508,7 +458,7 @@ func (c *call) httpRequest(raw []byte) sdk.Response {
 	}
 	// Girvi also checks the address a granted name resolves to; with no
 	// network here, there is nothing to resolve.
-	if granted, _ := HostGranted(c.manifest.HTTPHosts, c.settings, u); !granted {
+	if granted, _ := c.manifest.HostGranted(c.settings, u); !granted {
 		return refuse("this plugin is not allowed to reach " + u.Host)
 	}
 	c.requests = append(c.requests, rec)
@@ -517,48 +467,8 @@ func (c *call) httpRequest(raw []byte) sdk.Response {
 	}
 	resp := c.responses[0]
 	c.responses = c.responses[1:]
-	if len(resp.Body) > MaxHTTPResponse {
-		resp.Body = resp.Body[:MaxHTTPResponse]
+	if len(resp.Body) > contract.MaxHTTPResponse {
+		resp.Body = resp.Body[:contract.MaxHTTPResponse]
 	}
 	return resp
-}
-
-func hostPort(u *url.URL) string {
-	port := u.Port()
-	if port == "" {
-		port = "80"
-		if u.Scheme == "https" {
-			port = "443"
-		}
-	}
-	return strings.TrimSuffix(strings.ToLower(u.Hostname()), ".") + ":" + port
-}
-
-// HostGranted reports whether a manifest's http_hosts covers u, and whether
-// the grant reaches this computer or network on purpose. Same rules as Girvi.
-func HostGranted(entries []string, settings map[string]string, u *url.URL) (granted, local bool) {
-	name := strings.TrimSuffix(strings.ToLower(u.Hostname()), ".")
-	for _, entry := range entries {
-		if key, ok := manifest.SettingHost(entry); ok {
-			s, err := url.Parse(strings.TrimSpace(settings[key]))
-			if err == nil && s.Hostname() != "" && hostPort(s) == hostPort(u) {
-				return true, true
-			}
-			continue
-		}
-		if suffix, ok := strings.CutPrefix(entry, "*"); ok {
-			if strings.HasSuffix(name, suffix) {
-				granted = true
-			}
-			continue
-		}
-		entryName, entryPort, _ := strings.Cut(entry, ":")
-		if entryName == name && (entryPort == "" || name+":"+entryPort == hostPort(u)) {
-			if manifest.LocalName(entryName) {
-				return true, true
-			}
-			granted = true
-		}
-	}
-	return granted, false
 }

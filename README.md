@@ -16,13 +16,14 @@ may do, approve it, and turn it on per firm.
 | Path | What it is |
 |---|---|
 | [`contract/CONTRACT.md`](contract/CONTRACT.md) | The `girvi/1` contract: manifest, exports, host functions, outcomes, limits, events. Start here. |
+| [`contract`](contract) | The same as Go: limits, the host module, samples, and what a plugin is given of an event. Girvi imports it. |
 | [`contract/plugin.schema.json`](contract/plugin.schema.json) | JSON schema of `plugin.json`, for editor completion. |
 | [`contract/fixtures`](contract/fixtures) | A sample of every event, as Girvi sends it. |
 | [`sdk`](sdk) | The Go SDK. Handlers are ordinary functions; `sdk/sdktest` is a fake host for `go test`. |
 | [`cmd/girvi-plugin`](cmd/girvi-plugin) | The CLI: `new`, `validate`, `build`, `test`, `contract`. |
 | [`cmd/girvi-plugin-mcp`](cmd/girvi-plugin-mcp) | The same, as MCP tools for an AI assistant. |
 | [`harness`](harness) | A stand-in for Girvi that runs a built plugin with Girvi's checks and limits. Used by `test`. |
-| [`manifest`](manifest) | Reads and checks `plugin.json` and bundles with Girvi's install rules. |
+| [`manifest`](manifest) | Reads and checks `plugin.json`, bundles and their imports, and which hosts a plugin may reach, with Girvi's own rules. |
 | [`examples/webhook`](examples/webhook) | A complete plugin: posts loan events as signed JSON to a URL each firm chooses. |
 
 ## Write a plugin

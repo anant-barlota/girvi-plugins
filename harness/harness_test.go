@@ -2,7 +2,6 @@ package harness_test
 
 import (
 	"context"
-	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -108,26 +107,5 @@ func TestLoadRefuses(t *testing.T) {
 	}
 	if _, err := harness.Load(context.Background(), []byte(`{"id":"a/b","name":"B","version":"1","api":"girvi/2"}`), nil); err == nil {
 		t.Error("another API version was accepted")
-	}
-}
-
-func TestHostGrants(t *testing.T) {
-	settings := map[string]string{"url": "https://hooks.shop.example/in", "tally": "http://localhost:9000"}
-	entries := []string{"api.example.com", "*.cdn.example.com", "localhost:9100", "{setting:url}", "{setting:tally}"}
-	for target, want := range map[string]bool{
-		"https://api.example.com/x":         true,
-		"https://a.cdn.example.com/x":       true,
-		"https://cdn.example.com/x":         false,
-		"https://api.example.com.evil.io/x": false,
-		"https://hooks.shop.example:443/in": true,
-		"http://hooks.shop.example/in":      false,
-		"http://localhost:9000/tally":       true,
-		"http://localhost:9100/x":           true,
-		"http://localhost:8081/customers":   false,
-	} {
-		u, _ := url.Parse(target)
-		if got, _ := harness.HostGranted(entries, settings, u); got != want {
-			t.Errorf("%s: granted=%v, want %v", target, got, want)
-		}
 	}
 }

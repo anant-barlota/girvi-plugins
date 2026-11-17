@@ -115,7 +115,7 @@ The plugin reads its input with `input_len` and `input_read`. It is JSON:
   "attempt": 1,
   "event": { "id": "...", "type": "loan.created", "version": 1, "occurred_at": "...", "data": { } },
   "wake": "",
-  "firm": { "id": "barlota-jewellers", "name": "Barlota Jewellers" },
+  "firm": { "id": "bk-moolchand", "name": "BK Moolchand & Co." },
   "settings": { "url": "https://example.com/hook" }
 }
 ```

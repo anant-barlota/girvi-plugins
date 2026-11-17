@@ -20,9 +20,8 @@ import (
 	"golang.org/x/mod/semver"
 )
 
-// Schema is the catalog format this package reads and writes. Schema 1 listed
-// process plugins, one program per platform; schema 2 lists bundles.
-const Schema = 2
+// Schema is the catalog format this package reads and writes.
+const Schema = 1
 
 type Index struct {
 	Schema  int     `json:"schema"`
@@ -69,15 +68,6 @@ var (
 // Parse reads a catalog and refuses fields it does not know, so a typo in a
 // key (for example "sha265") is an error and not a silently missing checksum.
 func Parse(data []byte) (*Index, error) {
-	var head struct {
-		Schema int `json:"schema"`
-	}
-	if err := json.Unmarshal(data, &head); err != nil {
-		return nil, fmt.Errorf("index.json is not valid: %w", err)
-	}
-	if head.Schema != Schema {
-		return nil, fmt.Errorf("index.json is schema %d; this version reads schema %d", head.Schema, Schema)
-	}
 	dec := json.NewDecoder(bytes.NewReader(data))
 	dec.DisallowUnknownFields()
 	var idx Index

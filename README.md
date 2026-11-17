@@ -9,9 +9,7 @@ Girvi's records, and can reach only the hosts its manifest names. Shops install 
 may do, approve it, and turn it on per firm.
 
 > **Status:** `girvi/v1` is new and not yet frozen. Releases are `v0.0.x` for now, and the contract may still change
-> between them. This repository was `girvi-plugins`: tags before `v0.2.0-alpha.6`, including the older
-> process-based SDK at `v0.1.0-alpha.*`, belong to the module path `github.com/anant-barlota/girvi-plugins`. They
-> are pre-releases, so Go's `@latest` is the newest `v0.0.x` release.
+> between them.
 
 ## Contents
 
@@ -25,7 +23,7 @@ may do, approve it, and turn it on per firm.
 | [`plugin/manifest`](plugin/manifest) | Reads and checks `plugin.json`, bundles and their imports, and which hosts a plugin may reach, with Girvi's own rules. |
 | [`plugin/sandbox`](plugin/sandbox) | Girvi's plugin runtime: host functions, limits, deadline, what counts as an answer. Girvi runs plugins with it. |
 | [`plugin/harness`](plugin/harness) | The same runtime with storage in memory and scripted HTTP, so a test sends nothing. Used by `girvi plugin test`. |
-| [`plugin/registry`](plugin/registry) | The plugin catalog Girvi reads under Plugins, Browse (`index.json`, schema 2), and its rules. [girvi-registry](https://github.com/anant-barlota/girvi-registry) is the official catalog. |
+| [`plugin/registry`](plugin/registry) | The plugin catalog Girvi reads under Plugins, Browse (`index.json`), and its rules. [girvi-registry](https://github.com/anant-barlota/girvi-registry) is the official catalog. |
 | [`cmd/girvi`](cmd/girvi) | The `girvi` command: `girvi plugin new`, `validate`, `build`, `test`; `girvi registry check`; `girvi contract`; `girvi version`; and `girvi mcp`, the same as MCP tools for an AI assistant. |
 | [`examples/webhook`](examples/webhook) | A complete plugin: posts loan events as signed JSON to a URL each firm chooses. |
 

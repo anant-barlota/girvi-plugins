@@ -39,12 +39,12 @@ func TestAGoodIndexHasNoProblems(t *testing.T) {
 
 func TestEveryProblemIsReportedAtOnce(t *testing.T) {
 	idx := good()
-	idx.Schema = 1
+	idx.Schema = 2
 	idx.Plugins[0].ID = "Acme/Hook"
 	idx.Plugins = append(idx.Plugins, Entry{ID: "acme/two", Versions: []Version{{Version: "v1.0", API: "3",
 		Bundle: Bundle{URL: "http://x/y", SHA256: "short"}}}})
 	p := Validate(idx, Policy{})
-	for _, want := range []string{"schema must be 2", "not a valid plugin id", "needs a name", "needs a author", "needs a description", "no leading v", "api must be", "64 lowercase hex", "size must be", "https"} {
+	for _, want := range []string{"schema must be 1", "not a valid plugin id", "needs a name", "needs a author", "needs a description", "no leading v", "api must be", "64 lowercase hex", "size must be", "https"} {
 		if !has(p, want) {
 			t.Errorf("missing a problem mentioning %q in %v", want, p)
 		}
@@ -100,15 +100,8 @@ func TestAPublishedVersionCannotBeChangedButCanBeAddedOrRemoved(t *testing.T) {
 }
 
 func TestAMisspelledKeyIsAnErrorNotAMissingChecksum(t *testing.T) {
-	_, err := Parse([]byte(`{"schema":2,"name":"x","plugins":[{"id":"a/b","name":"B","versions":[{"version":"1.0.0","api":"girvi/v1","bundle":{"url":"u","sha265":"x"}}]}]}`))
+	_, err := Parse([]byte(`{"schema":1,"name":"x","plugins":[{"id":"a/b","name":"B","versions":[{"version":"1.0.0","api":"girvi/v1","bundle":{"url":"u","sha265":"x"}}]}]}`))
 	if err == nil || !strings.Contains(err.Error(), "sha265") {
-		t.Errorf("got %v", err)
-	}
-}
-
-func TestAnOlderSchemaIsNamed(t *testing.T) {
-	_, err := Parse([]byte(`{"schema":1,"name":"x","plugins":[{"id":"a/b","versions":[{"version":"1.0.0","protocol":3}]}]}`))
-	if err == nil || !strings.Contains(err.Error(), "schema 1; this version reads schema 2") {
 		t.Errorf("got %v", err)
 	}
 }

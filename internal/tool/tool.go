@@ -69,7 +69,7 @@ var scaffoldFiles = map[string]string{
 `,
 	"go.mod": `module {{.Module}}
 
-go 1.25.0
+go 1.27.4
 
 require {{.Require}}
 {{- if .Replace}}

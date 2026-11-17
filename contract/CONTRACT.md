@@ -269,7 +269,7 @@ Values:
 A plugin subscribed to both `payment.received` and `loan.redeemed` gets two
 events for a closing payment and should act on one.
 
-Samples of each are in `contract/fixtures`, or from `girvi-plugin contract
+Samples of each are in `contract/fixtures`, or from `girvi contract
 --event <type>`.
 
 ## Writing one
@@ -277,11 +277,11 @@ Samples of each are in `contract/fixtures`, or from `girvi-plugin contract
 With the Go SDK (`github.com/anant-barlota/girvi-plugins/sdk`):
 
 ```
-girvi-plugin new ./my-plugin --id your-name/my-plugin
+girvi plugin new ./my-plugin --id your-name/my-plugin
 cd my-plugin
 go test ./...          # handler logic, natively, with sdktest
-girvi-plugin build     # plugin.wasm and dist/<name>-<version>.zip
-girvi-plugin test --event loan.created --set url=https://example.com/hook
+girvi plugin build     # plugin.wasm and dist/<name>-<version>.zip
+girvi plugin test --event loan.created --set url=https://example.com/hook
 ```
 
 Any language that compiles to a WASI preview 1 reactor module with the

@@ -1,4 +1,4 @@
-// Package tool is what the girvi-plugin CLI and the MCP server do: make a new
+// Package tool is what the girvi CLI and the MCP server do: make a new
 // plugin, check it, build it into a bundle, and run it against sample events.
 // Both front ends call these functions and print or return their results.
 package tool
@@ -96,7 +96,7 @@ import "github.com/anant-barlota/girvi-plugins/sdk"
 
 // handle is called for each event listed in plugin.json "events", and for Send
 // test. It decides what happened: sdk.OK, sdk.Failed, sdk.Blocked (a setting
-// needs fixing) or sdk.Retry. See the contract: girvi-plugin contract.
+// needs fixing) or sdk.Retry. See the contract: girvi contract.
 func handle(h sdk.Host, in sdk.Input) sdk.Outcome {
 	switch in.EventType() {
 	case sdk.EventLoanCreated:
@@ -136,8 +136,8 @@ func TestLoanCreated(t *testing.T) {
 A Girvi plugin.
 
     go test ./...            # handler logic
-    girvi-plugin build       # dist/{{.Short}}-<version>.zip, the bundle to install
-    girvi-plugin test        # run the built plugin against a sample event
+    girvi plugin build       # dist/{{.Short}}-<version>.zip, the bundle to install
+    girvi plugin test        # run the built plugin against a sample event
 
 Install the zip from Girvi's Plugins screen. Nothing runs until it is approved.
 `,
@@ -179,7 +179,7 @@ func New(ctx context.Context, req NewRequest) (*NewResult, error) {
 	case v != "":
 		s.Require = ModulePath + " " + v
 	default:
-		return nil, errors.New("this girvi-plugin was built from a local checkout, so it does not know which SDK version to use. Pass the checkout's path as the SDK (--sdk)")
+		return nil, errors.New("this girvi command was built from a local checkout, so it does not know which SDK version to use. Pass the checkout's path as the SDK (--sdk)")
 	}
 
 	if err := os.MkdirAll(req.Dir, 0o755); err != nil {
@@ -204,8 +204,8 @@ func New(ctx context.Context, req NewRequest) (*NewResult, error) {
 	res.Next = []string{
 		"Edit plugin.json: the events it hears, the customer fields it needs, the hosts it may reach, its settings.",
 		"Edit handler.go, and test it with: go test ./...",
-		"Build the bundle with: girvi-plugin build",
-		"Run it against a sample event with: girvi-plugin test",
+		"Build the bundle with: girvi plugin build",
+		"Run it against a sample event with: girvi plugin test",
 	}
 	return res, nil
 }

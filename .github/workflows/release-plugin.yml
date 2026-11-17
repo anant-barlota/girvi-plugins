@@ -9,7 +9,7 @@
 #     release:
 #       uses: anant-barlota/girvi-plugins/.github/workflows/release-plugin.yml@<commit>
 #
-# The bundle is built by girvi-plugin at the SDK version the plugin's go.mod
+# The bundle is built by the girvi command at the SDK version the plugin's go.mod
 # requires, so it is checked with the rules of the contract it was written for.
 # The tag, without its "v" (and without a folder prefix such as "sms/"), must
 # equal the version in plugin.json.
@@ -61,8 +61,8 @@ jobs:
         run: |
           set -euo pipefail
           sdk="$(go list -m -f '{{.Version}}' github.com/anant-barlota/girvi-plugins)"
-          go get "github.com/anant-barlota/girvi-plugins/cmd/girvi-plugin@${sdk}"
-          go run github.com/anant-barlota/girvi-plugins/cmd/girvi-plugin build
+          go get "github.com/anant-barlota/girvi-plugins/cmd/girvi@${sdk}"
+          go run github.com/anant-barlota/girvi-plugins/cmd/girvi plugin build
           cd dist
           rm -f plugin.wasm
           sha256sum ./*.zip > SHA256SUMS

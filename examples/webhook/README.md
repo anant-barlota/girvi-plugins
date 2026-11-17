@@ -5,12 +5,12 @@ created, a payment is received, or a loan is redeemed. A building block for a
 Google Sheet, Zapier, Make, or your own service.
 
     go test ./...                       # the plugin's logic, natively
-    girvi-plugin build                  # dist/webhook-<version>.zip
-    girvi-plugin test --set url=https://example.com/hook --respond 503
+    girvi plugin build                  # dist/webhook-<version>.zip
+    girvi plugin test --set url=https://example.com/hook --respond 503
 
 ## What it sends
 
-The event exactly as Girvi gives it (see `girvi-plugin contract`), plus the
+The event exactly as Girvi gives it (see `girvi contract`), plus the
 firm, with these headers:
 
 | Header | Value |

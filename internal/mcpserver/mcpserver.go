@@ -1,4 +1,4 @@
-// Package mcpserver is the MCP server behind girvi-plugin-mcp. It is a thin
+// Package mcpserver is the MCP server behind girvi mcp. It is a thin
 // layer over package tool, so the assistant and the CLI do exactly the same
 // things.
 package mcpserver

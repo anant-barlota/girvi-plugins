@@ -20,8 +20,7 @@ may do, approve it, and turn it on per firm.
 | [`contract/plugin.schema.json`](contract/plugin.schema.json) | JSON schema of `plugin.json`, for editor completion. |
 | [`contract/fixtures`](contract/fixtures) | A sample of every event, as Girvi sends it. |
 | [`sdk`](sdk) | The Go SDK. Handlers are ordinary functions; `sdk/sdktest` is a fake host for `go test`. |
-| [`cmd/girvi-plugin`](cmd/girvi-plugin) | The CLI: `new`, `validate`, `build`, `test`, `contract`, `version`. |
-| [`cmd/girvi-plugin-mcp`](cmd/girvi-plugin-mcp) | The same, as MCP tools for an AI assistant. |
+| [`cmd/girvi`](cmd/girvi) | The `girvi` command: `girvi plugin new`, `validate`, `build`, `test`; `girvi contract`; `girvi version`; and `girvi mcp`, the same as MCP tools for an AI assistant. |
 | [`sandbox`](sandbox) | Girvi's plugin runtime: host functions, limits, deadline, what counts as an answer. Girvi runs plugins with it. |
 | [`harness`](harness) | The same runtime with storage in memory and scripted HTTP, so a test sends nothing. Used by `test`. |
 | [`manifest`](manifest) | Reads and checks `plugin.json`, bundles and their imports, and which hosts a plugin may reach, with Girvi's own rules. |
@@ -32,13 +31,13 @@ may do, approve it, and turn it on per firm.
 You need Go 1.25 or later.
 
 ```sh
-go install github.com/anant-barlota/girvi-plugins/cmd/girvi-plugin@<version>
+go install github.com/anant-barlota/girvi-plugins/cmd/girvi@<version>
 
-girvi-plugin new ./sms --id your-name/sms
+girvi plugin new ./sms --id your-name/sms
 cd sms
 go test ./...                    # the handler, natively
-girvi-plugin build               # dist/sms-0.1.0.zip, the bundle to install
-girvi-plugin test                # run it in the sandbox against a sample event
+girvi plugin build               # dist/sms-0.1.0.zip, the bundle to install
+girvi plugin test                # run it in the sandbox against a sample event
 ```
 
 `new` makes a plugin that builds and passes its tests as it is. Then:
@@ -70,26 +69,26 @@ girvi-plugin test                # run it in the sandbox against a sample event
    Girvi records it and does what it says.
 3. **Test the logic** with `go test`, using `sdktest.New()` as the host and `sdktest.Event(t, sdk.EventLoanCreated,
    settings)` as the input.
-4. **Test the build** with `girvi-plugin test`. It runs the real `.wasm` in Girvi's own runtime (package `sandbox`),
+4. **Test the build** with `girvi plugin test`. It runs the real `.wasm` in Girvi's own runtime (package `sandbox`),
    so imports, limits and answers are handled exactly as Girvi does. Storage is in memory, and network requests are
    not made: they are answered from `--respond` and listed, so nothing is sent. The first line names the runtime
    version; Girvi shows the one it uses on its Plugins screen, and the same version behaves the same.
 
    ```sh
-   girvi-plugin test --event payment.received --set url=https://example.com/hook --respond 503
-   girvi-plugin test --kind test             # as the Send test button sends it
-   girvi-plugin test --json                  # everything, for scripts
+   girvi plugin test --event payment.received --set url=https://example.com/hook --respond 503
+   girvi plugin test --kind test             # as the Send test button sends it
+   girvi plugin test --json                  # everything, for scripts
    ```
 
 5. **Install** the zip from Girvi's Plugins screen and approve it.
 
 ### With an AI assistant
 
-`girvi-plugin-mcp` is an MCP server with the same abilities: `read_contract`, `new_plugin`, `validate_plugin`,
+`girvi mcp` is an MCP server with the same abilities: `read_contract`, `new_plugin`, `validate_plugin`,
 `build_plugin` and `test_plugin`. Add it to a client, for example Claude Code:
 
 ```sh
-claude mcp add girvi-plugins -- go run github.com/anant-barlota/girvi-plugins/cmd/girvi-plugin-mcp@<version>
+claude mcp add girvi-plugins -- go run github.com/anant-barlota/girvi-plugins/cmd/girvi@<version> mcp
 ```
 
 Then ask for a plugin in plain words. The assistant reads the contract, makes the plugin, and builds and tests it
@@ -97,12 +96,12 @@ until it passes; tests never send anything over the network.
 
 ### Without a release
 
-Until there is a tagged release, build the tools from a checkout and point new plugins at it:
+Until there is a tagged release, build the command from a checkout and point new plugins at it:
 
 ```sh
 git clone https://github.com/anant-barlota/girvi-plugins && cd girvi-plugins
-go build -o ~/bin/ ./cmd/girvi-plugin ./cmd/girvi-plugin-mcp
-girvi-plugin new ~/sms --id your-name/sms --sdk "$PWD"
+go build -o ~/bin/ ./cmd/girvi
+girvi plugin new ~/sms --id your-name/sms --sdk "$PWD"
 ```
 
 For the MCP server, pass the checkout as `sdk` when calling `new_plugin`.

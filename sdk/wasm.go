@@ -10,7 +10,7 @@ import (
 // The whole wire contract with Girvi (import module girvi_v1). Every call moves
 // one JSON message each way, and the plugin pulls and pushes the bytes itself,
 // so Girvi never writes into the plugin's memory except where it is asked to.
-// See the contract (girvi-plugin contract) for the exact shapes.
+// See the contract (girvi contract) for the exact shapes.
 
 //go:wasmimport girvi_v1 input_len
 func inputLen() uint32

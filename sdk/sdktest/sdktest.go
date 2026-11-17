@@ -7,7 +7,7 @@
 //	if out.Kind != "retry" { ... }
 //	_ = h.Requests[0] // what the plugin sent
 //
-// It does not check plugin.json (allowed hosts, limits). `girvi-plugin test`
+// It does not check plugin.json (allowed hosts, limits). `girvi plugin test`
 // runs the built plugin in a sandbox that does.
 package sdktest
 

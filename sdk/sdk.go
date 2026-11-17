@@ -14,7 +14,7 @@
 //		return sdk.OK("")
 //	}
 //
-// and main.go exports it (see the scaffold made by `girvi-plugin new`):
+// and main.go exports it (see the scaffold made by `girvi plugin new`):
 //
 //	//go:wasmexport on_event
 //	func onEvent() { sdk.Run(handle) }

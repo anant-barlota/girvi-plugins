@@ -1,13 +1,19 @@
-// Command girvi-plugin makes, checks, builds and tests Girvi plugins.
+// Command girvi is the Girvi command line. Today it makes, checks, builds and
+// tests plugins, and serves the same as an MCP server for AI assistants.
 //
-//	girvi-plugin new <dir> --id publisher/name [--name N] [--description D] [--sdk PATH]
-//	girvi-plugin validate [dir]
-//	girvi-plugin build [dir]
-//	girvi-plugin test [dir] [--event TYPE] [--kind event|test|wake] [--wake PAYLOAD]
+//	girvi plugin new <dir> --id publisher/name [--name N] [--description D] [--sdk PATH]
+//	girvi plugin validate [dir]
+//	girvi plugin build [dir]
+//	girvi plugin test [dir] [--event TYPE] [--kind event|test|wake] [--wake PAYLOAD]
 //	                  [--set key=value]... [--respond STATUS[:BODY]]... [--json]
-//	girvi-plugin contract [--schema | --event TYPE]
+//	girvi contract [--schema | --event TYPE]
+//	girvi mcp
+//	girvi version
 //
-// Install it with: go install github.com/anant-barlota/girvi-plugins/cmd/girvi-plugin@latest
+// Install it with: go install github.com/anant-barlota/girvi-plugins/cmd/girvi@latest
+//
+// It never contains the Girvi app. Commands that act on a shop are to reach a
+// running Girvi through its API, as gh reaches GitHub.
 package main
 
 import (
@@ -23,51 +29,82 @@ import (
 
 	"github.com/anant-barlota/girvi-plugins/contract"
 	"github.com/anant-barlota/girvi-plugins/harness"
+	"github.com/anant-barlota/girvi-plugins/internal/mcpserver"
 	"github.com/anant-barlota/girvi-plugins/internal/tool"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-const usage = `girvi-plugin makes, checks, builds and tests Girvi plugins.
+const usage = `girvi is the Girvi command line.
 
-  girvi-plugin new <dir> --id publisher/name   make a plugin that builds and passes its tests
-  girvi-plugin validate [dir]                  check plugin.json, and the build, with Girvi's rules
-  girvi-plugin build [dir]                     compile to dist/plugin.wasm and zip the bundle
-  girvi-plugin test [dir]                      run the built plugin against a sample event
-  girvi-plugin contract                        print the girvi/v1 contract
-  girvi-plugin version                         the runtime version this tool runs plugins with
+  girvi plugin    make, check, build and test plugins
+  girvi contract  print the girvi/v1 plugin contract
+  girvi mcp       serve the plugin commands to an AI assistant (MCP, over stdin and stdout)
+  girvi version   the runtime version this tool runs plugins with
+
+Run a command with -h for its options.
+`
+
+const pluginUsage = `girvi plugin makes, checks, builds and tests Girvi plugins.
+
+  girvi plugin new <dir> --id publisher/name   make a plugin that builds and passes its tests
+  girvi plugin validate [dir]                  check plugin.json, and the build, with Girvi's rules
+  girvi plugin build [dir]                     compile to dist/plugin.wasm and zip the bundle
+  girvi plugin test [dir]                      run the built plugin against a sample event
 
 Run a command with -h for its options. dir defaults to the current folder.
 `
 
 func main() {
-	if len(os.Args) < 2 {
+	if err := run(context.Background(), os.Args[1:]); err != nil {
+		fmt.Fprintln(os.Stderr, "error:", err)
+		os.Exit(1)
+	}
+}
+
+func run(ctx context.Context, args []string) error {
+	if len(args) == 0 {
 		fmt.Fprint(os.Stderr, usage)
 		os.Exit(2)
 	}
-	ctx := context.Background()
-	var err error
-	switch os.Args[1] {
-	case "new":
-		err = cmdNew(ctx, os.Args[2:])
-	case "validate":
-		err = cmdValidate(ctx, os.Args[2:])
-	case "build":
-		err = cmdBuild(ctx, os.Args[2:])
-	case "test":
-		err = cmdTest(ctx, os.Args[2:])
+	switch args[0] {
+	case "plugin":
+		return runPlugin(ctx, args[1:])
 	case "contract":
-		err = cmdContract(os.Stdout, os.Args[2:])
+		return cmdContract(os.Stdout, args[1:])
+	case "mcp":
+		return mcpserver.New().Run(ctx, &mcp.StdioTransport{})
 	case "version":
 		fmt.Println(runtimeVersion())
 	case "-h", "--help", "help":
 		fmt.Print(usage)
 	default:
-		fmt.Fprintf(os.Stderr, "unknown command %q\n\n%s", os.Args[1], usage)
+		fmt.Fprintf(os.Stderr, "unknown command %q\n\n%s", args[0], usage)
 		os.Exit(2)
 	}
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "error:", err)
-		os.Exit(1)
+	return nil
+}
+
+func runPlugin(ctx context.Context, args []string) error {
+	if len(args) == 0 {
+		fmt.Fprint(os.Stderr, pluginUsage)
+		os.Exit(2)
 	}
+	switch args[0] {
+	case "new":
+		return cmdNew(ctx, args[1:])
+	case "validate":
+		return cmdValidate(ctx, args[1:])
+	case "build":
+		return cmdBuild(ctx, args[1:])
+	case "test":
+		return cmdTest(ctx, args[1:])
+	case "-h", "--help", "help":
+		fmt.Print(pluginUsage)
+	default:
+		fmt.Fprintf(os.Stderr, "unknown command %q\n\n%s", "plugin "+args[0], pluginUsage)
+		os.Exit(2)
+	}
+	return nil
 }
 
 // parse lets flags come before or after the one positional argument.
@@ -93,7 +130,7 @@ func parse(fs *flag.FlagSet, args []string) (string, error) {
 }
 
 func cmdNew(ctx context.Context, args []string) error {
-	fs := flag.NewFlagSet("new", flag.ExitOnError)
+	fs := flag.NewFlagSet("plugin new", flag.ExitOnError)
 	var req tool.NewRequest
 	fs.StringVar(&req.ID, "id", "", "plugin id, publisher/name (required)")
 	fs.StringVar(&req.Name, "name", "", "name shown to the user")
@@ -104,7 +141,7 @@ func cmdNew(ctx context.Context, args []string) error {
 		return err
 	}
 	if dir == "." {
-		return errors.New("say which folder to make: girvi-plugin new <dir> --id publisher/name")
+		return errors.New("say which folder to make: girvi plugin new <dir> --id publisher/name")
 	}
 	req.Dir = dir
 	res, err := tool.New(ctx, req)
@@ -123,7 +160,7 @@ func cmdNew(ctx context.Context, args []string) error {
 }
 
 func cmdValidate(ctx context.Context, args []string) error {
-	fs := flag.NewFlagSet("validate", flag.ExitOnError)
+	fs := flag.NewFlagSet("plugin validate", flag.ExitOnError)
 	asJSON := fs.Bool("json", false, "print the report as JSON")
 	dir, err := parse(fs, args)
 	if err != nil {
@@ -151,7 +188,7 @@ func cmdValidate(ctx context.Context, args []string) error {
 }
 
 func cmdBuild(ctx context.Context, args []string) error {
-	fs := flag.NewFlagSet("build", flag.ExitOnError)
+	fs := flag.NewFlagSet("plugin build", flag.ExitOnError)
 	asJSON := fs.Bool("json", false, "print the result as JSON")
 	dir, err := parse(fs, args)
 	if err != nil {
@@ -174,7 +211,7 @@ func (r *repeated) String() string     { return strings.Join(*r, ",") }
 func (r *repeated) Set(v string) error { *r = append(*r, v); return nil }
 
 func cmdTest(ctx context.Context, args []string) error {
-	fs := flag.NewFlagSet("test", flag.ExitOnError)
+	fs := flag.NewFlagSet("plugin test", flag.ExitOnError)
 	var req tool.TestRequest
 	var sets, responds repeated
 	fs.StringVar(&req.Event, "event", "", "sample event to deliver: "+strings.Join(contract.Events(), ", "))

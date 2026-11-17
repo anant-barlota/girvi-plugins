@@ -1,0 +1,45 @@
+{
+  "data": {
+    "customer": {
+      "id": "01a1e951-a432-74bf-bc41-752ba628f2e3",
+      "name": "Asha Patel",
+      "phone": "98765 43210",
+      "phone_e164": "+919876543210"
+    },
+    "loan": {
+      "id": "01a1e953-e8d7-7274-b307-0b910c464a5b",
+      "interest_rate": {
+        "basis_points": 1400,
+        "display": "14% p.a.",
+        "per": "year"
+      },
+      "number": "F-1024",
+      "pledged_on": {
+        "display": "12 Nov 2026",
+        "iso": "2026-11-12"
+      },
+      "principal": {
+        "display": "₹30,000.00",
+        "paise": 3000000
+      },
+      "status": "active",
+      "total_gross_weight": {
+        "display": "14.650 g",
+        "milligrams": 14650
+      },
+      "total_net_weight": {
+        "display": "14.000 g",
+        "milligrams": 14000
+      },
+      "total_pieces": 2,
+      "value": {
+        "display": "₹34,000.00",
+        "paise": 3400000
+      }
+    }
+  },
+  "id": "01a1e953-e8db-73d0-8597-f33ce2ae524d",
+  "occurred_at": "2026-11-12T05:45:52Z",
+  "type": "loan.created",
+  "version": 1
+}

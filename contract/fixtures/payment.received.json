@@ -1,0 +1,43 @@
+{
+  "data": {
+    "amount": {
+      "display": "₹10,350.00",
+      "paise": 1035000
+    },
+    "customer": {
+      "id": "01a1e951-a432-74bf-bc41-752ba628f2e3",
+      "name": "Asha Patel",
+      "phone": "98765 43210",
+      "phone_e164": "+919876543210"
+    },
+    "date": {
+      "display": "12 Dec 2026",
+      "iso": "2026-12-12"
+    },
+    "interest": {
+      "display": "₹350.00",
+      "paise": 35000
+    },
+    "loan": {
+      "id": "01a1e953-e8d7-7274-b307-0b910c464a5b",
+      "number": "F-1024"
+    },
+    "loan_closed": false,
+    "outstanding_principal": {
+      "display": "₹20,000.00",
+      "paise": 2000000
+    },
+    "payment": {
+      "id": "01a1e9a0-1c2d-7e3f-8a4b-5c6d7e8f9a0b",
+      "number": "H-0312"
+    },
+    "principal": {
+      "display": "₹10,000.00",
+      "paise": 1000000
+    }
+  },
+  "id": "01a1e9a0-1c31-7a11-9b22-3c44d55e66f7",
+  "occurred_at": "2026-12-12T06:10:03Z",
+  "type": "payment.received",
+  "version": 1
+}

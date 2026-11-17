@@ -1,30 +1,25 @@
-# Builds a Girvi plugin for every platform Girvi runs on and publishes the programs
-# and their checksums as a GitHub Release. Plugin authors call this from their own
-# repository, so every plugin is built the same way:
+# Builds a Girvi plugin bundle and publishes it, with its SHA-256, as a GitHub
+# Release. Plugin authors call this from their own repository, so every plugin
+# is built the same way:
 #
 #   on:
 #     push:
 #       tags: ['v*']
 #   jobs:
 #     release:
-#       uses: anant-barlota/girvi-plugins/.github/workflows/release-plugin.yml@a8419c6dd09b215a06b214674c855cf1136758a0 # v0.1.0-alpha.8
-#       with:
-#         name: webhook
+#       uses: anant-barlota/girvi-plugins/.github/workflows/release-plugin.yml@<commit>
 #
-# The release is made for the tag that triggered it. The version is the tag without
-# its "v" (and without a folder prefix such as "whatsapp/"), and must equal the
-# version the plugin reports about itself.
+# The bundle is built by girvi-plugin at the SDK version the plugin's go.mod
+# requires, so it is checked with the rules of the contract it was written for.
+# The tag, without its "v" (and without a folder prefix such as "sms/"), must
+# equal the version in plugin.json.
 name: Release a Girvi plugin
 
 on:
   workflow_call:
     inputs:
-      name:
-        description: Short plugin name; the programs are called girvi-plugin-<name>_<version>_<os>_<arch>
-        required: true
-        type: string
-      package:
-        description: Go package to build, relative to the repository root
+      path:
+        description: Folder of the plugin, relative to the repository root
         required: false
         default: "."
         type: string
@@ -38,68 +33,49 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  release:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: true
-      matrix:
-        include:
-          - { goos: linux, goarch: amd64 }
-          - { goos: linux, goarch: arm64 }
-          - { goos: darwin, goarch: amd64 }
-          - { goos: darwin, goarch: arm64 }
-          - { goos: windows, goarch: amd64 }
+    permissions:
+      contents: write
+    defaults:
+      run:
+        working-directory: ${{ inputs.path }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
-          go-version-file: go.mod
-      - name: Build
+          go-version-file: ${{ inputs.path }}/go.mod
+      - name: Check the version
         env:
-          NAME: ${{ inputs.name }}
-          PACKAGE: ${{ inputs.package }}
           REF_NAME: ${{ github.ref_name }}
-          GOOS: ${{ matrix.goos }}
-          GOARCH: ${{ matrix.goarch }}
-          CGO_ENABLED: "0"
         run: |
           set -euo pipefail
           version="${REF_NAME##*/}"
           version="${version#v}"
-          ext=""
-          if [ "$GOOS" = "windows" ]; then ext=".exe"; fi
-          mkdir -p dist
-          go build -trimpath -ldflags "-s -w" -o "dist/girvi-plugin-${NAME}_${version}_${GOOS}_${GOARCH}${ext}" "$PACKAGE"
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: dist-${{ matrix.goos }}-${{ matrix.goarch }}
-          path: dist/*
-          if-no-files-found: error
-
-  release:
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
-        with:
-          pattern: dist-*
-          merge-multiple: true
-          path: dist
+          declared="$(python3 -c 'import json; print(json.load(open("plugin.json"))["version"])')"
+          if [ "$version" != "$declared" ]; then
+            echo "The tag says $version but plugin.json says $declared." >&2
+            exit 1
+          fi
+      - name: Build
+        run: |
+          set -euo pipefail
+          sdk="$(go list -m -f '{{.Version}}' github.com/anant-barlota/girvi-plugins)"
+          go get "github.com/anant-barlota/girvi-plugins/cmd/girvi-plugin@${sdk}"
+          go run github.com/anant-barlota/girvi-plugins/cmd/girvi-plugin build
+          cd dist
+          rm -f plugin.wasm
+          sha256sum ./*.zip > SHA256SUMS
       - name: Publish
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           TAG: ${{ github.ref_name }}
-          NAME: ${{ inputs.name }}
           PRERELEASE: ${{ inputs.prerelease }}
         run: |
           set -euo pipefail
-          cd dist
-          sha256sum * > SHA256SUMS
           flags=()
           if [ "$PRERELEASE" = "true" ]; then flags+=(--prerelease); fi
-          gh release create "$TAG" ./* --repo "$REPO" --title "${NAME} ${TAG##*/}" \
-            --notes "Programs for Windows, macOS and Linux. Check them against SHA256SUMS, or install from a Girvi catalog, which does it for you." \
+          gh release create "$TAG" dist/* --repo "$REPO" --title "${TAG##*/}" \
+            --notes "The plugin bundle for Girvi. Check it against SHA256SUMS, or install from a Girvi catalog, which does it for you." \
             "${flags[@]}"

@@ -2,7 +2,7 @@
   "id": "test/probe",
   "name": "Probe",
   "version": "1",
-  "api": "girvi/1",
+  "api": "girvi/v1",
   "events": ["loan.created"],
   "settings": [{"key": "mode"}]
 }

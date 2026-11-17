@@ -62,7 +62,7 @@ var scaffoldFiles = map[string]string{
   "id": "{{.ID}}",
   "name": "{{.Name}}",
   "version": "0.1.0",
-  "api": "girvi/1",
+  "api": "girvi/v1",
   "description": "{{.Description}}",
   "events": ["loan.created"]
 }

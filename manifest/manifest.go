@@ -17,7 +17,7 @@ import (
 )
 
 // APIVersion is the contract this package describes.
-const APIVersion = "girvi/1"
+const APIVersion = "girvi/v1"
 
 // Events a plugin can subscribe to.
 const (

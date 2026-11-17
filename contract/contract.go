@@ -1,4 +1,4 @@
-// Package contract is the girvi/1 plugin contract as data: the written
+// Package contract is the girvi/v1 plugin contract as data: the written
 // description, the JSON schema of plugin.json, and a sample of every event.
 // The CLI, the MCP server and the test harness all read it from here.
 package contract

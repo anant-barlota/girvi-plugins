@@ -58,7 +58,7 @@ func TestTools(t *testing.T) {
 	}
 
 	r, err := cs.CallTool(ctx, &mcp.CallToolParams{Name: "read_contract", Arguments: map[string]any{}})
-	if err != nil || r.IsError || !strings.HasPrefix(text(r), "# The girvi/1 plugin contract") {
+	if err != nil || r.IsError || !strings.HasPrefix(text(r), "# The girvi/v1 plugin contract") {
 		t.Fatalf("read_contract: %v %+v", err, r)
 	}
 	r, _ = cs.CallTool(ctx, &mcp.CallToolParams{Name: "read_contract", Arguments: map[string]any{"event": "loan.redeemed"}})

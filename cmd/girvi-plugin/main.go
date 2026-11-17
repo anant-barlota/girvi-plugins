@@ -32,7 +32,7 @@ const usage = `girvi-plugin makes, checks, builds and tests Girvi plugins.
   girvi-plugin validate [dir]                  check plugin.json, and the build, with Girvi's rules
   girvi-plugin build [dir]                     compile to dist/plugin.wasm and zip the bundle
   girvi-plugin test [dir]                      run the built plugin against a sample event
-  girvi-plugin contract                        print the girvi/1 contract
+  girvi-plugin contract                        print the girvi/v1 contract
   girvi-plugin version                         the runtime version this tool runs plugins with
 
 Run a command with -h for its options. dir defaults to the current folder.

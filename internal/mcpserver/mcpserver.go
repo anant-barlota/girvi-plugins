@@ -29,7 +29,7 @@ func New() *mcp.Server {
 
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "read_contract",
-		Description: "The girvi/1 plugin contract: plugin.json, exports, host functions, outcomes, limits, deliveries and events. Optionally the JSON schema of plugin.json, or a sample event.",
+		Description: "The girvi/v1 plugin contract: plugin.json, exports, host functions, outcomes, limits, deliveries and events. Optionally the JSON schema of plugin.json, or a sample event.",
 	}, readContract)
 
 	mcp.AddTool(s, &mcp.Tool{

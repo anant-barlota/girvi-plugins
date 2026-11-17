@@ -8,14 +8,14 @@ exports it to accounting. It is a WebAssembly module that Girvi runs in a sandbo
 Girvi's records, and can reach only the hosts its manifest names. Shops install a plugin from a file, see what it
 may do, approve it, and turn it on per firm.
 
-> **Status:** `girvi/1` is new and not yet frozen. Nothing here is tagged for it yet; until it is, use a checkout
-> (see [Without a release](#without-a-release)). The older process-based SDK is at tags `v0.1.0-alpha.*`.
+> **Status:** `girvi/v1` is new and not yet frozen. It is at pre-release tags `v0.2.0-alpha.*` and may still change
+> between them. The older process-based SDK is at tags `v0.1.0-alpha.*`.
 
 ## Contents
 
 | Path | What it is |
 |---|---|
-| [`contract/CONTRACT.md`](contract/CONTRACT.md) | The `girvi/1` contract: manifest, exports, host functions, outcomes, limits, events. Start here. |
+| [`contract/CONTRACT.md`](contract/CONTRACT.md) | The `girvi/v1` contract: manifest, exports, host functions, outcomes, limits, events. Start here. |
 | [`contract`](contract) | The same as Go: limits, the host module, samples, and what a plugin is given of an event. Girvi imports it. |
 | [`contract/plugin.schema.json`](contract/plugin.schema.json) | JSON schema of `plugin.json`, for editor completion. |
 | [`contract/fixtures`](contract/fixtures) | A sample of every event, as Girvi sends it. |

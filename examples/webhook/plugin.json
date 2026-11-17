@@ -2,7 +2,7 @@
   "id": "anant-barlota/webhook",
   "name": "Webhook",
   "version": "0.2.0",
-  "api": "girvi/1",
+  "api": "girvi/v1",
   "description": "Posts loan events to a URL you choose, signed, so a spreadsheet, Zapier, Make or your own service can act on them.",
   "author": "Anant Barlota",
   "events": ["loan.created", "payment.received", "loan.redeemed"],

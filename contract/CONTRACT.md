@@ -1,4 +1,4 @@
-# The girvi/1 plugin contract
+# The girvi/v1 plugin contract
 
 Everything a plugin author needs to know about how Girvi runs a plugin. It is
 complete on its own: an author never needs to read Girvi's code.
@@ -30,7 +30,7 @@ code's secrets.
   "id": "your-name/webhook",
   "name": "Webhook",
   "version": "1.0.0",
-  "api": "girvi/1",
+  "api": "girvi/v1",
   "description": "Posts loan events to a URL you choose.",
   "author": "Your Name",
   "events": ["loan.created", "payment.received", "loan.redeemed"],
@@ -49,7 +49,7 @@ code's secrets.
 |---|---|---|
 | `id` | yes | `publisher/name`, lower case letters, digits and `-`. `girvi/` is reserved for official plugins. |
 | `name`, `version` | yes | Shown to the user. |
-| `api` | yes | Must be `"girvi/1"`. |
+| `api` | yes | Must be `"girvi/v1"`. |
 | `description`, `author` | no | Shown to the user. |
 | `events` | no | Events the plugin is told about: `loan.created`, `payment.received`, `loan.redeemed`. |
 | `fields` | no | Personal details the plugin is given: `customer.name`, `customer.phone`. Without them those fields are absent from every event. |

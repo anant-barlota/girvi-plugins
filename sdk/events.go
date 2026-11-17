@@ -1,6 +1,6 @@
 package sdk
 
-// The events a plugin can subscribe to, and their data. This is the girvi/1
+// The events a plugin can subscribe to, and their data. This is the girvi/v1
 // contract: adding a field is compatible; removing or renaming one is not.
 //
 // Money is integer paise and weight is integer milligrams, each with a

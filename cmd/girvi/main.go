@@ -7,6 +7,7 @@
 //	girvi plugin test [dir] [--event TYPE] [--kind event|test|wake] [--wake PAYLOAD]
 //	                  [--set key=value]... [--respond STATUS[:BODY]]... [--json]
 //	girvi contract [--schema | --event TYPE]
+//	girvi registry check [--index FILE] [--base FILE] [--offline] [--any-host]
 //	girvi mcp
 //	girvi version
 //
@@ -38,6 +39,7 @@ const usage = `girvi is the Girvi command line.
 
   girvi plugin    make, check, build and test plugins
   girvi contract  print the girvi/v1 plugin contract
+  girvi registry  check a plugin catalog (index.json)
   girvi mcp       serve the plugin commands to an AI assistant (MCP, over stdin and stdout)
   girvi version   the runtime version this tool runs plugins with
 
@@ -71,6 +73,8 @@ func run(ctx context.Context, args []string) error {
 		return runPlugin(ctx, args[1:])
 	case "contract":
 		return cmdContract(os.Stdout, args[1:])
+	case "registry":
+		return runRegistry(ctx, args[1:])
 	case "mcp":
 		return mcpserver.New().Run(ctx, &mcp.StdioTransport{})
 	case "version":

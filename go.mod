@@ -5,6 +5,7 @@ go 1.25.0
 require (
 	github.com/modelcontextprotocol/go-sdk v1.8.0
 	github.com/tetratelabs/wazero v1.12.0
+	golang.org/x/mod v0.40.0
 )
 
 require (

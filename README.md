@@ -25,7 +25,8 @@ may do, approve it, and turn it on per firm.
 | [`plugin/manifest`](plugin/manifest) | Reads and checks `plugin.json`, bundles and their imports, and which hosts a plugin may reach, with Girvi's own rules. |
 | [`plugin/sandbox`](plugin/sandbox) | Girvi's plugin runtime: host functions, limits, deadline, what counts as an answer. Girvi runs plugins with it. |
 | [`plugin/harness`](plugin/harness) | The same runtime with storage in memory and scripted HTTP, so a test sends nothing. Used by `girvi plugin test`. |
-| [`cmd/girvi`](cmd/girvi) | The `girvi` command: `girvi plugin new`, `validate`, `build`, `test`; `girvi contract`; `girvi version`; and `girvi mcp`, the same as MCP tools for an AI assistant. |
+| [`plugin/registry`](plugin/registry) | The plugin catalog Girvi reads under Plugins, Browse (`index.json`, schema 2), and its rules. [girvi-registry](https://github.com/anant-barlota/girvi-registry) is the official catalog. |
+| [`cmd/girvi`](cmd/girvi) | The `girvi` command: `girvi plugin new`, `validate`, `build`, `test`; `girvi registry check`; `girvi contract`; `girvi version`; and `girvi mcp`, the same as MCP tools for an AI assistant. |
 | [`examples/webhook`](examples/webhook) | A complete plugin: posts loan events as signed JSON to a URL each firm chooses. |
 
 ## Write a plugin

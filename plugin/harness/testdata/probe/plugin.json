@@ -4,5 +4,6 @@
   "version": "1",
   "api": "girvi/v1",
   "events": ["loan.created"],
+  "http_hosts": ["api.example.com"],
   "settings": [{"key": "mode"}]
 }

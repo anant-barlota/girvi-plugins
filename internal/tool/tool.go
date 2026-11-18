@@ -296,7 +296,7 @@ func Build(ctx context.Context, dir string) (*Built, error) {
 		return nil, err
 	}
 	wasmPath := filepath.Join(dist, "plugin.wasm")
-	cmd := exec.CommandContext(ctx, "go", "build", "-buildmode=c-shared", "-trimpath", "-ldflags=-s -w", "-o", wasmPath, ".")
+	cmd := exec.CommandContext(ctx, "go", "build", "-buildmode=c-shared", "-trimpath", "-buildvcs=false", "-ldflags=-s -w", "-o", wasmPath, ".")
 	cmd.Dir = dir
 	cmd.Env = append(os.Environ(), "GOOS=wasip1", "GOARCH=wasm", "CGO_ENABLED=0")
 	if out, err := cmd.CombinedOutput(); err != nil {
@@ -393,7 +393,7 @@ func Test(ctx context.Context, req TestRequest) (*harness.Result, error) {
 	}
 	if kind == plugin.KindWake {
 		in := plugin.Input{Kind: plugin.KindWake, DeliveryID: "wake-1", Attempt: 1, Wake: req.Wake,
-			Firm: plugin.Firm{ID: "test-firm", Name: "Test Firm"}, Settings: harness.Settings(p.Manifest, req.Settings)}
+			Firm: plugin.Firm{ID: "bk-moolchand", Name: "BK Moolchand & Co."}, Settings: harness.Settings(p.Manifest, req.Settings)}
 		res := p.Call(ctx, "on_wake", in, opts)
 		return &res, nil
 	}

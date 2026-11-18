@@ -88,7 +88,7 @@ func (h *Host) Keys() []string {
 }
 
 // Event is an input carrying the contract's sample event of a type, with all
-// customer fields present, for the firm "test-firm".
+// customer fields present, for the firm "bk-moolchand".
 func Event(t testing.TB, eventType string, settings map[string]string) plugin.Input {
 	t.Helper()
 	raw, err := contract.Fixture(eventType)
@@ -110,6 +110,6 @@ func Input(t testing.TB, kind string, event json.RawMessage, settings map[string
 	}
 	return plugin.Input{
 		Kind: kind, DeliveryID: e.ID, Attempt: 1, Event: event,
-		Firm: plugin.Firm{ID: "test-firm", Name: "Test Firm"}, Settings: settings,
+		Firm: plugin.Firm{ID: "bk-moolchand", Name: "BK Moolchand & Co."}, Settings: settings,
 	}
 }

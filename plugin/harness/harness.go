@@ -129,7 +129,7 @@ func (p *Plugin) Input(eventType, kind string, saved map[string]string) (plugin.
 	_ = json.Unmarshal(event, &env)
 	return plugin.Input{
 		Kind: kind, DeliveryID: env.ID, Attempt: 1, Event: event,
-		Firm: plugin.Firm{ID: "test-firm", Name: "Test Firm"}, Settings: p.Manifest.SettingsFor(saved),
+		Firm: plugin.Firm{ID: "bk-moolchand", Name: "BK Moolchand & Co."}, Settings: p.Manifest.SettingsFor(saved),
 	}, nil
 }
 

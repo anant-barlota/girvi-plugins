@@ -90,6 +90,14 @@ func TestSandboxAndLimits(t *testing.T) {
 	if r.Outcome == nil || r.Outcome.Note != "stored=1000 wake=true" || len(r.Wakes) != 1 {
 		t.Fatalf("store: %+v", r)
 	}
+	r = call(t, "flood", 0)
+	if r.Outcome == nil || r.Outcome.Note != "sent=20 last=more than 20 requests in one call" || len(r.Requests) != 20 {
+		t.Fatalf("flood: outcome %+v, %d requests", r.Outcome, len(r.Requests))
+	}
+	r = call(t, "big", 0)
+	if r.Outcome == nil || r.Outcome.Note != `1MB="" 2MB="the request body is larger than 1 MB"` || len(r.Requests) != 1 {
+		t.Fatalf("big: outcome %+v, %d requests", r.Outcome, len(r.Requests))
+	}
 }
 
 func TestWake(t *testing.T) {

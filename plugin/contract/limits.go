@@ -8,6 +8,8 @@ const (
 	MemoryLimitMB   = 64
 	CallDeadline    = 30 * time.Second
 	MaxHTTPResponse = 1 << 20
+	MaxHTTPRequest  = 1 << 20 // body
+	MaxHTTPRequests = 20      // per call
 	MaxStorageKey   = 256
 	MaxStorageValue = 1 << 20
 	MaxWakePayload  = 64 << 10

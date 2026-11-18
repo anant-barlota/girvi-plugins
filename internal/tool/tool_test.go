@@ -1,6 +1,7 @@
 package tool_test
 
 import (
+	"bytes"
 	"context"
 	"os"
 	"os/exec"
@@ -36,12 +37,22 @@ func TestNewPluginWorksAsMade(t *testing.T) {
 	if out, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("go test in the new plugin: %v\n%s", err, out)
 	}
+	// A plugin usually lives in a git repository. The bundle must not record
+	// its commit, so the same source builds to the same bundle anywhere.
+	git := exec.Command("git", "init", "-q")
+	git.Dir = dir
+	if out, err := git.CombinedOutput(); err != nil {
+		t.Fatalf("git init: %v\n%s", err, out)
+	}
 	b, err := tool.Build(ctx, dir)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if filepath.Base(b.Bundle) != "sms-0.1.0.zip" || len(b.SHA256) != 64 || strings.Join(b.Exports, ",") != "on_event" {
 		t.Fatalf("built %+v", b)
+	}
+	if wasm, _ := os.ReadFile(b.Wasm); bytes.Contains(wasm, []byte("vcs.")) {
+		t.Error("the bundle records version control details, so it depends on where it was built")
 	}
 	if r := tool.Validate(ctx, dir); !r.OK || !r.Built {
 		t.Fatalf("validate %+v", r)

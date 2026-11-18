@@ -195,8 +195,9 @@ The HTTP request and response are JSON. `body` is base64, as Go's
 ```
 
 `error` is set, and `status` is `0`, when the request was not made or got no
-answer: not allowed, could not connect, timed out. Responses over 1 MB are
-cut.
+answer: not allowed, could not connect, timed out, a body over 1 MB, or more
+than 20 requests in one call. Responses over 1 MB are cut. Each request makes
+a new connection.
 
 ### Limits
 
@@ -206,6 +207,8 @@ cut.
 | Time per call | 30 seconds |
 | `plugin.wasm` | 64 MB |
 | `plugin.json` | 64 KB |
+| HTTP request body | 1 MB |
+| HTTP requests per call | 20 |
 | HTTP response body | 1 MB |
 | Storage key | 256 bytes |
 | Storage value | 1 MB |

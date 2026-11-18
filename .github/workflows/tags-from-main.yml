@@ -1,0 +1,26 @@
+# A release tag must point at a commit on main. GitHub cannot refuse such a
+# tag when it is pushed, so this fails loudly instead, and says how to remove it.
+name: Release tags come from main
+
+on:
+  push:
+    tags: ['v*', '*/v*']
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - name: The tag is on main
+        run: |
+          commit="$(git rev-parse "${GITHUB_REF}^{commit}")"
+          if ! git merge-base --is-ancestor "$commit" origin/main; then
+            echo "::error::${GITHUB_REF_NAME} points at ${commit}, which is not on main. Remove it with: git push origin :refs/tags/${GITHUB_REF_NAME}"
+            exit 1
+          fi
+          echo "${GITHUB_REF_NAME} (${commit}) is on main."

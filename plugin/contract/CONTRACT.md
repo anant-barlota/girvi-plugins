@@ -145,7 +145,7 @@ The plugin ends every call by writing one JSON object with `output`:
 | `blocked` | The shop must fix a setting first. | Holds it, and calls again after the plugin's settings change. |
 | `retry` | Try again later. | Calls again after `retry_in_seconds` (at least 1, at most a year). |
 
-`note` is shown to the user in the plugin's activity. Do not put secrets in
+`note` is shown to the user in the plugin's activity; the first 1000 bytes are kept. Do not put secrets in
 it. The plugin decides every outcome; Girvi does not retry on its own
 judgement, with one exception: a call that ends with **no answer**.
 
@@ -172,7 +172,7 @@ outside it ends the call with no answer.
 |---|---|---|
 | `input_len` | `() -> u32` | Length of the input. |
 | `input_read` | `(ptr)` | Copies the input to `ptr`. |
-| `output` | `(ptr, len)` | Sets the outcome. Call once, at the end. |
+| `output` | `(ptr, len)` | Sets the outcome. Call once, at the end; if it is called again, the last call counts. |
 | `log` | `(ptr, len)` | A line in this call's log, shown in the activity. At most 50 lines of 500 bytes are kept. |
 | `http_request` | `(ptr, len) -> u32` | Makes a request; returns the length of the response, which `result_read` copies out. Needs `http_hosts`. |
 | `result_read` | `(ptr)` | Copies the last result of `http_request` or `storage_get`. |
@@ -207,6 +207,8 @@ a new connection.
 | Time per call | 30 seconds |
 | `plugin.wasm` | 64 MB |
 | `plugin.json` | 64 KB |
+| Outcome (`output`) | 64 KB; larger is no answer |
+| Outcome `note` kept | 1000 bytes |
 | HTTP request body | 1 MB |
 | HTTP requests per call | 20 |
 | HTTP response body | 1 MB |

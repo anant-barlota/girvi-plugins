@@ -1,6 +1,6 @@
 {
-  "id": "test/probe",
-  "name": "Probe",
+  "id": "test/hostile",
+  "name": "Hostile",
   "version": "1",
   "api": "girvi/v1",
   "events": ["loan.created"],

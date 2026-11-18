@@ -13,6 +13,8 @@ const (
 	MaxStorageKey   = 256
 	MaxStorageValue = 1 << 20
 	MaxWakePayload  = 64 << 10
+	MaxOutcome      = 64 << 10 // what output is given
+	MaxNote         = 1000     // of the outcome's note, kept and shown
 	MaxLogLines     = 50
 	MaxLogLine      = 500
 	MaxStderr       = 16 << 10 // of a crashing plugin's last words

@@ -25,7 +25,7 @@ may do, approve it, and turn it on per firm.
 | [`plugin/harness`](plugin/harness) | The same runtime with storage in memory and scripted HTTP, so a test sends nothing. Used by `girvi plugin test`. |
 | [`plugin/registry`](plugin/registry) | The plugin catalog Girvi reads under Plugins, Browse (`index.json`), and its rules. [girvi-registry](https://github.com/anant-barlota/girvi-registry) is the official catalog. |
 | [`cmd/girvi`](cmd/girvi) | The `girvi` command: `girvi plugin new`, `validate`, `build`, `test`; `girvi registry check`; `girvi contract`; `girvi version`; and `girvi mcp`, the same as MCP tools for an AI assistant. |
-| [`examples/webhook`](examples/webhook) | A complete plugin: posts loan events as signed JSON to a URL each firm chooses. |
+| [`plugins/webhook`](plugins/webhook) | The official webhook plugin, `girvi/webhook`: posts loan events as signed JSON to a URL each firm chooses. A complete example. |
 
 ## Write a plugin
 
@@ -137,6 +137,12 @@ girvi plugin publish --repo <you>/<plugin-repo> --index girvi-registry/index.jso
 
 `publish` downloads the released bundle, checks it is the version in `plugin.json`, and adds it to `index.json`
 with its SHA-256, size and what it asks for. Open a pull request with that change.
+
+## Official plugins
+
+Official plugins (ids `girvi/...`) live in [`plugins/`](plugins), each its own Go module that requires a released
+SDK. Every pull request tests them against the SDK in that pull request. To release one, set `version` in its
+`plugin.json` and push the tag `<name>/v<version>` from `main`; the bundle appears as a GitHub Release here.
 
 ## What Girvi does about a plugin you did not write
 

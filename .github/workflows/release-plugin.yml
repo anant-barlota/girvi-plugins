@@ -76,6 +76,10 @@ jobs:
           set -euo pipefail
           flags=()
           if [ "$PRERELEASE" = "true" ]; then flags+=(--prerelease); fi
-          gh release create "$TAG" dist/* --repo "$REPO" --title "${TAG##*/}" \
+          # A tag with a folder prefix ("webhook/v0.1.0") is one of several
+          # plugins in the repository: name it in the title, and leave the
+          # repository's latest release alone.
+          if [[ "$TAG" == */* ]]; then flags+=(--latest=false); fi
+          gh release create "$TAG" dist/* --repo "$REPO" --title "${TAG/\// }" \
             --notes "The plugin bundle for Girvi. Check it against SHA256SUMS, or install from a Girvi catalog, which does it for you." \
             "${flags[@]}"

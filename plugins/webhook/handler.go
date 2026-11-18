@@ -1,6 +1,6 @@
-// Command webhook is a Girvi plugin that posts loan events as signed JSON to a
-// URL each firm chooses. Nothing in this file knows about WebAssembly: handle
-// is an ordinary function, tested natively in webhook_test.go.
+// The webhook plugin posts loan events as signed JSON to a URL each firm
+// chooses. Nothing in this file knows about WebAssembly: handle is an ordinary
+// function, tested natively in handler_test.go.
 package main
 
 import (
@@ -19,8 +19,6 @@ import (
 
 	"github.com/anant-barlota/girvi-sdk/plugin"
 )
-
-const version = "0.2.0"
 
 var now = time.Now
 
@@ -51,6 +49,8 @@ func onOwnNetwork(host string) bool {
 	return err == nil && (ip.IsLoopback() || ip.IsPrivate())
 }
 
+// handle is called for each event listed in plugin.json "events", and for
+// Send test.
 func handle(h plugin.Host, in plugin.Input) plugin.Outcome {
 	u, problem := target(in.Settings)
 	if problem != "" {
@@ -65,7 +65,7 @@ func handle(h plugin.Host, in plugin.Input) plugin.Outcome {
 	timestamp := strconv.FormatInt(now().Unix(), 10)
 	headers := map[string]string{
 		"Content-Type":      "application/json",
-		"User-Agent":        "Girvi-Webhook/" + version,
+		"User-Agent":        "Girvi-Webhook",
 		"X-Girvi-Delivery":  id,
 		"X-Girvi-Event":     typ,
 		"X-Girvi-Timestamp": timestamp,

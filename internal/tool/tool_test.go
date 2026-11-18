@@ -97,14 +97,15 @@ func copyDir(t *testing.T, from, to string) {
 	}
 }
 
-// The example webhook, built and run in the sandbox.
-func TestExampleWebhook(t *testing.T) {
+// The official webhook plugin, built against this checkout of the SDK and run
+// in the sandbox.
+func TestWebhookPlugin(t *testing.T) {
 	ctx := context.Background()
 	dir := t.TempDir()
-	copyDir(t, filepath.Join(repoRoot(t), "examples", "webhook"), dir)
+	copyDir(t, filepath.Join(repoRoot(t), "plugins", "webhook"), dir)
 	gomod := filepath.Join(dir, "go.mod")
 	b, _ := os.ReadFile(gomod)
-	os.WriteFile(gomod, []byte(strings.Replace(string(b), "=> ../..", "=> "+repoRoot(t), 1)), 0o644)
+	os.WriteFile(gomod, append(b, "\nreplace github.com/anant-barlota/girvi-sdk => "+repoRoot(t)+"\n"...), 0o644)
 
 	if _, err := tool.Build(ctx, dir); err != nil {
 		t.Fatal(err)

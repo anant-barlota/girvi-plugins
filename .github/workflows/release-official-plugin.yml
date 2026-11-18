@@ -1,0 +1,44 @@
+# Releases an official plugin from plugins/<name> when the tag <name>/v<version>
+# is pushed, with the same steps as any plugin (release-plugin.yml). The tag
+# must be on main and equal the version in the plugin's plugin.json.
+name: Release an official plugin
+
+on:
+  push:
+    tags: ['*/v*']
+
+permissions:
+  contents: read
+
+jobs:
+  which:
+    runs-on: ubuntu-latest
+    outputs:
+      name: ${{ steps.name.outputs.name }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - id: name
+        env:
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          name="${REF_NAME%%/*}"
+          if [[ ! "$name" =~ ^[a-z0-9-]+$ ]] || [ ! -f "plugins/$name/plugin.json" ]; then
+            echo "::error::$REF_NAME does not name a plugin in plugins/"
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor "$(git rev-parse "${GITHUB_REF}^{commit}")" origin/main; then
+            echo "::error::$REF_NAME is not on main"
+            exit 1
+          fi
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+
+  release:
+    needs: which
+    permissions:
+      contents: write
+    uses: ./.github/workflows/release-plugin.yml
+    with:
+      path: plugins/${{ needs.which.outputs.name }}

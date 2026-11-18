@@ -33,8 +33,10 @@ func NewNetwork() *Network {
 			DialContext:           dialer.DialContext,
 			TLSHandshakeTimeout:   10 * time.Second,
 			ResponseHeaderTimeout: contract.CallDeadline,
-			MaxIdleConns:          16,
-			IdleConnTimeout:       time.Minute,
+			// Every request dials, so guardDial checks it with that
+			// request's own grant. A pooled connection opened for one plugin
+			// that may reach this network must not carry another's request.
+			DisableKeepAlives: true,
 		},
 		CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
 	}}

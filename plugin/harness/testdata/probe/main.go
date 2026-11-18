@@ -43,6 +43,20 @@ func onEvent() {
 			}
 			ok := h.WakeAt(time.Now().Add(time.Hour).Unix(), "later")
 			return plugin.OK(fmt.Sprintf("stored=%d wake=%v", n, ok))
+		case "flood":
+			sent, last := 0, ""
+			for range 25 {
+				r := h.HTTP(plugin.Request{Method: "GET", URL: "https://api.example.com/"})
+				if r.Error == "" {
+					sent++
+				}
+				last = r.Error
+			}
+			return plugin.OK(fmt.Sprintf("sent=%d last=%s", sent, last))
+		case "big":
+			small := h.HTTP(plugin.Request{Method: "POST", URL: "https://api.example.com/", Body: make([]byte, 1<<20)})
+			large := h.HTTP(plugin.Request{Method: "POST", URL: "https://api.example.com/", Body: make([]byte, 2<<20)})
+			return plugin.OK(fmt.Sprintf("1MB=%q 2MB=%q", small.Error, large.Error))
 		}
 		h.Log("hello")
 		return plugin.OK("fine")

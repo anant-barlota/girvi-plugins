@@ -172,6 +172,7 @@ type call struct {
 	Call
 	settings map[string]string
 	manifest manifest.Manifest
+	requests int // http_request calls so far
 	input    []byte
 	output   []byte
 	result   []byte // the last host function result, waiting for result_read
@@ -354,7 +355,17 @@ func hostFunctions(ctx context.Context, rt wazero.Runtime) error {
 
 	b.NewFunctionBuilder().WithFunc(func(ctx context.Context, m api.Module, ptr, n uint32) uint32 {
 		c := state(ctx)
-		c.result, _ = json.Marshal(c.httpRequest(ctx, read(m, ptr, n)))
+		c.requests++
+		var resp plugin.Response
+		switch {
+		case c.requests > contract.MaxHTTPRequests:
+			resp = plugin.Response{Error: fmt.Sprintf("more than %d requests in one call", contract.MaxHTTPRequests)}
+		case n > maxRequestJSON:
+			resp = plugin.Response{Error: "the request body is larger than 1 MB"}
+		default:
+			resp = c.httpRequest(ctx, read(m, ptr, n))
+		}
+		c.result, _ = json.Marshal(resp)
 		return uint32(len(c.result))
 	}).Export("http_request")
 
@@ -429,6 +440,10 @@ func hostFunctions(ctx context.Context, rt wazero.Runtime) error {
 	return err
 }
 
+// maxRequestJSON is the most http_request reads: a body at the limit, base64
+// encoded in the request's JSON, with room for the method, URL and headers.
+const maxRequestJSON = contract.MaxHTTPRequest*4/3 + 64<<10
+
 func (c *call) httpRequest(ctx context.Context, raw []byte) plugin.Response {
 	var r plugin.Request
 	if err := json.Unmarshal(raw, &r); err != nil {
@@ -445,6 +460,9 @@ func (c *call) httpRequest(ctx context.Context, raw []byte) plugin.Response {
 	u, err := url.Parse(r.URL)
 	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Hostname() == "" {
 		return refuse("not an http or https URL")
+	}
+	if len(r.Body) > contract.MaxHTTPRequest {
+		return refuse("the request body is larger than 1 MB")
 	}
 	granted, local := c.manifest.HostGranted(c.settings, u)
 	if !granted {

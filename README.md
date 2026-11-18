@@ -9,9 +9,7 @@ Girvi's records, and can reach only the hosts its manifest names. Shops install 
 may do, approve it, and turn it on per firm.
 
 > **Status:** `girvi/v1` is new and not yet frozen. Releases are `v0.0.x` for now, and the contract may still change
-> between them. This repository was `girvi-plugins`: tags before `v0.2.0-alpha.6`, including the older
-> process-based SDK at `v0.1.0-alpha.*`, belong to the module path `github.com/anant-barlota/girvi-plugins`. They
-> are pre-releases, so Go's `@latest` is the newest `v0.0.x` release.
+> between them.
 
 ## Contents
 
@@ -25,7 +23,8 @@ may do, approve it, and turn it on per firm.
 | [`plugin/manifest`](plugin/manifest) | Reads and checks `plugin.json`, bundles and their imports, and which hosts a plugin may reach, with Girvi's own rules. |
 | [`plugin/sandbox`](plugin/sandbox) | Girvi's plugin runtime: host functions, limits, deadline, what counts as an answer. Girvi runs plugins with it. |
 | [`plugin/harness`](plugin/harness) | The same runtime with storage in memory and scripted HTTP, so a test sends nothing. Used by `girvi plugin test`. |
-| [`cmd/girvi`](cmd/girvi) | The `girvi` command: `girvi plugin new`, `validate`, `build`, `test`; `girvi contract`; `girvi version`; and `girvi mcp`, the same as MCP tools for an AI assistant. |
+| [`plugin/registry`](plugin/registry) | The plugin catalog Girvi reads under Plugins, Browse (`index.json`), and its rules. [girvi-registry](https://github.com/anant-barlota/girvi-registry) is the official catalog. |
+| [`cmd/girvi`](cmd/girvi) | The `girvi` command: `girvi plugin new`, `validate`, `build`, `test`; `girvi registry check`; `girvi contract`; `girvi version`; and `girvi mcp`, the same as MCP tools for an AI assistant. |
 | [`examples/webhook`](examples/webhook) | A complete plugin: posts loan events as signed JSON to a URL each firm chooses. |
 
 ## Write a plugin
@@ -87,18 +86,18 @@ girvi plugin test                # run it in the sandbox against a sample event
 ### With an AI assistant
 
 `girvi mcp` is an MCP server with the same abilities: `read_contract`, `new_plugin`, `validate_plugin`,
-`build_plugin` and `test_plugin`. Add it to a client, for example Claude Code:
+`build_plugin`, `test_plugin` and `publish_plugin`. Add it to a client, for example Claude Code:
 
 ```sh
-claude mcp add girvi-sdk -- go run github.com/anant-barlota/girvi-sdk/cmd/girvi@<version> mcp
+claude mcp add girvi -- go run github.com/anant-barlota/girvi-sdk/cmd/girvi@<version> mcp
 ```
 
 Then ask for a plugin in plain words. The assistant reads the contract, makes the plugin, and builds and tests it
 until it passes; tests never send anything over the network.
 
-### Without a release
+### From a checkout of this repository
 
-Until there is a tagged release, build the command from a checkout and point new plugins at it:
+To work on the SDK itself, build the command from a checkout and point new plugins at it:
 
 ```sh
 git clone https://github.com/anant-barlota/girvi-sdk && cd girvi-sdk
@@ -128,8 +127,16 @@ jobs:
 ```
 
 It builds the bundle with the same SDK version your plugin uses and publishes the zip and its SHA-256 as a GitHub
-Release. Then list it in the [plugin catalog](https://github.com/anant-barlota/girvi-registry), or give the zip to
-whoever will install it.
+Release. Give the zip to whoever will install it, or list it in the
+[plugin catalog](https://github.com/anant-barlota/girvi-registry) so it shows under Plugins, Browse:
+
+```sh
+git clone https://github.com/<you>/girvi-registry   # your fork of the catalog
+girvi plugin publish --repo <you>/<plugin-repo> --index girvi-registry/index.json --license MIT
+```
+
+`publish` downloads the released bundle, checks it is the version in `plugin.json`, and adds it to `index.json`
+with its SHA-256, size and what it asks for. Open a pull request with that change.
 
 ## What Girvi does about a plugin you did not write
 

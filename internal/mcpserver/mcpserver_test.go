@@ -53,7 +53,7 @@ func TestTools(t *testing.T) {
 		names = append(names, tool.Name)
 	}
 	slices.Sort(names)
-	if strings.Join(names, ",") != "build_plugin,new_plugin,read_contract,test_plugin,validate_plugin" {
+	if strings.Join(names, ",") != "build_plugin,new_plugin,publish_plugin,read_contract,test_plugin,validate_plugin" {
 		t.Fatalf("tools %v", names)
 	}
 

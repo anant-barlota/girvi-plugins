@@ -6,6 +6,7 @@ package mcpserver
 import (
 	"context"
 	"errors"
+	"net/http"
 
 	"github.com/anant-barlota/girvi-sdk/internal/tool"
 	"github.com/anant-barlota/girvi-sdk/plugin/contract"
@@ -19,6 +20,7 @@ Start with read_contract: it is the whole contract and is short. Then:
 2. Edit plugin.json (events, customer fields, http_hosts, settings) and handler.go. Keep logic in handler.go so it runs under plain go test with plugin/plugintest.
 3. build_plugin compiles to WebAssembly, checks it the way Girvi does at install, and writes dist/<name>-<version>.zip.
 4. test_plugin runs the built plugin against a sample event and returns its outcome, logs, HTTP requests (scripted; nothing is sent), storage and wake-ups.
+5. After the author releases the bundle on GitHub, publish_plugin lists it in a checkout of a catalog's index.json, for a pull request to the catalog.
 validate_plugin checks plugin.json and the build at any time.
 
 The plugin decides each outcome: ok, failed (never works), blocked (a setting needs fixing), or retry (with a delay). Money is integer paise with a display string; never compute or format it.`
@@ -66,6 +68,13 @@ func New() *mcp.Server {
 			return nil, nil, err
 		}
 		return nil, res, nil
+	})
+	mcp.AddTool(s, &mcp.Tool{
+		Name:        "publish_plugin",
+		Description: "List a released plugin in a catalog: download the bundle from the GitHub release for the version in plugin.json, check it is that plugin and version, and add it to the catalog's index.json (a local checkout) with its SHA-256, size and grants. The author then opens a pull request to the catalog.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in tool.PublishRequest) (*mcp.CallToolResult, *tool.Published, error) {
+		p, err := tool.Publish(ctx, http.DefaultClient, in)
+		return nil, p, err
 	})
 	return s
 }

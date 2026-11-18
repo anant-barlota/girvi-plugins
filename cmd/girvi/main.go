@@ -1,12 +1,14 @@
 // Command girvi is the Girvi command line. Today it makes, checks, builds and
 // tests plugins, and serves the same as an MCP server for AI assistants.
 //
-//	girvi plugin new <dir> --id publisher/name [--name N] [--description D] [--sdk PATH]
+//	girvi plugin new <dir> --id publisher/name [--name N] [--description D] [--author A] [--sdk PATH]
 //	girvi plugin validate [dir]
 //	girvi plugin build [dir]
 //	girvi plugin test [dir] [--event TYPE] [--kind event|test|wake] [--wake PAYLOAD]
 //	                  [--set key=value]... [--respond STATUS[:BODY]]... [--json]
+//	girvi plugin publish [dir] --repo owner/repo --index PATH [--tag T] [--homepage URL] [--license L]
 //	girvi contract [--schema | --event TYPE]
+//	girvi registry check [--index FILE] [--base FILE] [--offline] [--any-host]
 //	girvi mcp
 //	girvi version
 //
@@ -36,20 +38,22 @@ import (
 
 const usage = `girvi is the Girvi command line.
 
-  girvi plugin    make, check, build and test plugins
+  girvi plugin    make, check, build, test and publish plugins
   girvi contract  print the girvi/v1 plugin contract
+  girvi registry  check a plugin catalog (index.json)
   girvi mcp       serve the plugin commands to an AI assistant (MCP, over stdin and stdout)
   girvi version   the runtime version this tool runs plugins with
 
 Run a command with -h for its options.
 `
 
-const pluginUsage = `girvi plugin makes, checks, builds and tests Girvi plugins.
+const pluginUsage = `girvi plugin makes, checks, builds, tests and publishes Girvi plugins.
 
   girvi plugin new <dir> --id publisher/name   make a plugin that builds and passes its tests
   girvi plugin validate [dir]                  check plugin.json, and the build, with Girvi's rules
   girvi plugin build [dir]                     compile to dist/plugin.wasm and zip the bundle
   girvi plugin test [dir]                      run the built plugin against a sample event
+  girvi plugin publish [dir] --repo --index    list the released bundle in a catalog's index.json
 
 Run a command with -h for its options. dir defaults to the current folder.
 `
@@ -71,6 +75,8 @@ func run(ctx context.Context, args []string) error {
 		return runPlugin(ctx, args[1:])
 	case "contract":
 		return cmdContract(os.Stdout, args[1:])
+	case "registry":
+		return runRegistry(ctx, args[1:])
 	case "mcp":
 		return mcpserver.New().Run(ctx, &mcp.StdioTransport{})
 	case "version":
@@ -98,6 +104,8 @@ func runPlugin(ctx context.Context, args []string) error {
 		return cmdBuild(ctx, args[1:])
 	case "test":
 		return cmdTest(ctx, args[1:])
+	case "publish":
+		return cmdPublish(ctx, args[1:])
 	case "-h", "--help", "help":
 		fmt.Print(pluginUsage)
 	default:
@@ -135,6 +143,7 @@ func cmdNew(ctx context.Context, args []string) error {
 	fs.StringVar(&req.ID, "id", "", "plugin id, publisher/name (required)")
 	fs.StringVar(&req.Name, "name", "", "name shown to the user")
 	fs.StringVar(&req.Description, "description", "", "one sentence shown to the user")
+	fs.StringVar(&req.Author, "author", "", "who made it, shown to the user (default: the publisher part of the id)")
 	fs.StringVar(&req.SDK, "sdk", "", "a local girvi-sdk checkout to use instead of a released SDK")
 	dir, err := parse(fs, args)
 	if err != nil {

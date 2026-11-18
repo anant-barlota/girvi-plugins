@@ -175,6 +175,7 @@ type call struct {
 	requests int // http_request calls so far
 	input    []byte
 	output   []byte
+	oversize bool   // the last output was over contract.MaxOutcome
 	result   []byte // the last host function result, waiting for result_read
 	res      *Result
 }
@@ -195,11 +196,16 @@ func (e *Engine) Run(ctx context.Context, m *Module, c Call) Result {
 		res.NoAnswer = err
 		return res
 	}
+	if st.oversize {
+		res.NoAnswer = &NoAnswer{Reason: "no_outcome", Detail: fmt.Sprintf("its outcome is larger than %d KB", contract.MaxOutcome>>10)}
+		return res
+	}
 	var out plugin.Outcome
 	if json.Unmarshal(st.output, &out) != nil || !slices.Contains([]string{"ok", "failed", "blocked", "retry"}, out.Kind) {
 		res.NoAnswer = &NoAnswer{Reason: "no_outcome", Detail: "it returned no outcome"}
 		return res
 	}
+	out.Note = truncate(out.Note, contract.MaxNote)
 	res.Outcome = &out
 	return res
 }
@@ -339,7 +345,12 @@ func hostFunctions(ctx context.Context, rt wazero.Runtime) error {
 	}).Export("input_read")
 
 	b.NewFunctionBuilder().WithFunc(func(ctx context.Context, m api.Module, ptr, n uint32) {
-		state(ctx).output = read(m, ptr, n)
+		// The last call counts. One too large is not read at all.
+		c := state(ctx)
+		c.output, c.oversize = nil, n > contract.MaxOutcome
+		if !c.oversize {
+			c.output = read(m, ptr, n)
+		}
 	}).Export("output")
 
 	b.NewFunctionBuilder().WithFunc(func(ctx context.Context, m api.Module, ptr uint32) {

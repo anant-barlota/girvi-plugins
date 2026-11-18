@@ -1,4 +1,4 @@
-module probe
+module hostile
 
 go 1.27.4
 

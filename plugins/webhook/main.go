@@ -1,6 +1,7 @@
 //go:build wasip1
 
-// The export Girvi calls. The plugin itself is in webhook.go.
+// The exports Girvi calls. Everything else is in handler.go, which has no
+// WebAssembly in it, so it is tested with plain go test.
 package main
 
 import "github.com/anant-barlota/girvi-sdk/plugin"

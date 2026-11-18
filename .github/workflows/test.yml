@@ -25,3 +25,11 @@ jobs:
           fi
       - run: go vet ./...
       - run: go test ./...
+      - name: Official plugins, against this checkout of the SDK
+        run: |
+          set -euo pipefail
+          go work init . plugins/*/
+          for d in plugins/*/; do
+            (cd "$d" && go vet ./... && go test ./...)
+            go run ./cmd/girvi plugin build "$d"
+          done

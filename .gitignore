@@ -5,9 +5,12 @@ bin/
 *.so
 *.dylib
 *.test
-/sample-notifier
 
 # OS files
 .DS_Store
 Thumbs.db
 dist/
+
+# A workspace for trying plugins against this checkout (CI makes its own)
+/go.work
+/go.work.sum

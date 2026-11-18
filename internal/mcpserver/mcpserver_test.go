@@ -66,8 +66,8 @@ func TestTools(t *testing.T) {
 		t.Fatalf("sample event: %s", text(r))
 	}
 
-	example, _ := filepath.Abs(filepath.Join("..", "..", "examples", "webhook"))
-	r, err = cs.CallTool(ctx, &mcp.CallToolParams{Name: "validate_plugin", Arguments: map[string]any{"dir": example}})
+	webhook, _ := filepath.Abs(filepath.Join("..", "..", "plugins", "webhook"))
+	r, err = cs.CallTool(ctx, &mcp.CallToolParams{Name: "validate_plugin", Arguments: map[string]any{"dir": webhook}})
 	if err != nil || r.IsError || !strings.Contains(text(r), `"ok":true`) {
 		t.Fatalf("validate_plugin: %v %s", err, text(r))
 	}

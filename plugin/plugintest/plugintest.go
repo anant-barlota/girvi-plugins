@@ -98,6 +98,18 @@ func Event(t testing.TB, eventType string, settings map[string]string) plugin.In
 	return Input(t, plugin.KindEvent, raw, settings)
 }
 
+// WakeInput is the input of a scheduled call: on_wake with the payload the plugin
+// passed to WakeAt, for the firm "bk-moolchand".
+func WakeInput(payload string, settings map[string]string) plugin.Input {
+	if settings == nil {
+		settings = map[string]string{}
+	}
+	return plugin.Input{
+		Kind: plugin.KindWake, DeliveryID: "01a1f3c0-0000-7000-8000-000000000001", Attempt: 1, Wake: payload,
+		Firm: plugin.Firm{ID: "bk-moolchand", Name: "BK Moolchand & Co."}, Settings: settings,
+	}
+}
+
 // Input builds an input around any event JSON.
 func Input(t testing.TB, kind string, event json.RawMessage, settings map[string]string) plugin.Input {
 	t.Helper()

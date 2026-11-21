@@ -7,6 +7,7 @@ import (
 
 	"github.com/anant-barlota/girvi-sdk/plugin"
 	"github.com/anant-barlota/girvi-sdk/plugin/contract"
+	"github.com/anant-barlota/girvi-sdk/plugin/plugintest"
 )
 
 // Every sample event reads into the SDK's types with nothing left over, so the
@@ -52,5 +53,16 @@ func TestTypedReads(t *testing.T) {
 	}
 	if in.EventType() != plugin.EventPaymentReceived {
 		t.Errorf("event type %q", in.EventType())
+	}
+}
+
+// A scheduled call carries the payload and the firm's settings, and no event.
+func TestWakeInput(t *testing.T) {
+	in := plugintest.WakeInput("loan-1", map[string]string{"url": "https://example.com"})
+	if in.Kind != plugin.KindWake || in.Wake != "loan-1" || in.EventType() != "" || in.Settings["url"] == "" || in.Firm.ID != "bk-moolchand" {
+		t.Fatalf("%+v", in)
+	}
+	if plugintest.WakeInput("x", nil).Settings == nil {
+		t.Error("nil settings must become an empty map, as Girvi gives")
 	}
 }
